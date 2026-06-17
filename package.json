@@ -1,0 +1,50 @@
+{
+  "name": "@aryrabelo/omp-free-text",
+  "version": "0.1.0",
+  "description": "OMP harness extension: a free-text session-notes panel below the status line, persisted per repo/branch/session.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ary Rabelo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aryrabelo/omp-free-text.git"
+  },
+  "homepage": "https://github.com/aryrabelo/omp-free-text#readme",
+  "bugs": {
+    "url": "https://github.com/aryrabelo/omp-free-text/issues"
+  },
+  "keywords": [
+    "omp",
+    "oh-my-pi",
+    "pi",
+    "extension",
+    "plugin",
+    "notes",
+    "free-text",
+    "scratchpad"
+  ],
+  "omp": {
+    "extensions": ["./src/main.ts"]
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@oh-my-pi/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@oh-my-pi/pi-coding-agent": "*",
+    "@types/bun": "latest",
+    "@types/node": "^22",
+    "typescript": "^5.6.0"
+  }
+}
