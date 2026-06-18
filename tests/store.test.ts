@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { appendHistory, createDebouncedSaver, loadNote, saveNote } from "../src/store";
+import { appendHistory, createDebouncedSaver, listNotes, loadNote, saveNote } from "../src/store";
 
 let dir: string;
 
@@ -78,5 +78,24 @@ describe("createDebouncedSaver", () => {
     saver.dispose();
     await saver.flush();
     expect(writes).toEqual([]);
+  });
+});
+
+describe("listNotes", () => {
+  test("lists notes newest-first, excludes history logs, extracts a preview", async () => {
+    const d = join(dir, "repo", "branch");
+    await mkdir(d, { recursive: true });
+    await writeFile(join(d, "old.md"), "\n  old note line\nmore\n", "utf8");
+    await writeFile(join(d, "new.md"), "new note\n", "utf8");
+    await writeFile(join(d, "new.history.md"), "## ts\n\nsnapshot\n", "utf8");
+    await utimes(join(d, "old.md"), new Date(1000), new Date(1000));
+    await utimes(join(d, "new.md"), new Date(2000), new Date(2000));
+    const list = await listNotes(d);
+    expect(list.map((n) => n.sessionId)).toEqual(["new", "old"]);
+    expect(list.map((n) => n.preview)).toEqual(["new note", "old note line"]);
+  });
+
+  test("returns [] when the directory does not exist", async () => {
+    expect(await listNotes(join(dir, "nope"))).toEqual([]);
   });
 });

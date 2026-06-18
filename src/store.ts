@@ -2,8 +2,8 @@
  * Persistence for free-text notes: read/write the markdown file and a small
  * debounced saver so rapid updates coalesce into one write.
  */
-import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { appendFile, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 
 /** Read a note file, returning "" when it does not exist yet. */
 export async function loadNote(path: string): Promise<string> {
@@ -19,6 +19,39 @@ export async function loadNote(path: string): Promise<string> {
 export async function saveNote(path: string, content: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, content, "utf8");
+}
+
+/** Summary of one session's note, for the cross-session browser. */
+export interface NoteSummary {
+  path: string;
+  sessionId: string;
+  mtimeMs: number;
+  /** First non-empty line of the note, trimmed; "" when the note is blank. */
+  preview: string;
+}
+
+/**
+ * List the session notes in `dir`, newest first, excluding the `.history.md`
+ * logs. Returns [] when the directory does not exist yet.
+ */
+export async function listNotes(dir: string): Promise<NoteSummary[]> {
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw err;
+  }
+  const files = entries.filter((f) => f.endsWith(".md") && !f.endsWith(".history.md"));
+  const summaries = await Promise.all(
+    files.map(async (file): Promise<NoteSummary> => {
+      const path = join(dir, file);
+      const [info, content] = await Promise.all([stat(path), readFile(path, "utf8")]);
+      const preview = content.split("\n").find((l) => l.trim().length > 0)?.trim() ?? "";
+      return { path, sessionId: file.slice(0, -3), mtimeMs: info.mtimeMs, preview };
+    }),
+  );
+  return summaries.sort((a, b) => b.mtimeMs - a.mtimeMs);
 }
 
 /**
