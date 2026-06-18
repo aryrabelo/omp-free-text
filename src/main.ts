@@ -2,8 +2,8 @@
  * @aryrabelo/omp-free-text
  *
  * OMP extension: a free-text session-notes panel below the status line.
- * - Shows the latest note in a widget above the editor (i.e. directly under the
- *   status line) via `ctx.ui.setWidget(..., { placement: "aboveEditor" })`.
+ * - Shows the latest note in a widget below the editor via
+ *   `ctx.ui.setWidget(..., { placement: "belowEditor" })`.
  * - Opens a multi-line editor on `Ctrl+N` or `/note`.
  * - Persists to `~/.omp-free-text/{repo}/{branch}/{session-id}.md`.
  */
@@ -11,7 +11,7 @@ import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@o
 import { homedir } from "node:os";
 import { notePathFor, resolveLocation } from "./paths";
 import { createDebouncedSaver, type DebouncedSaver, loadNote, saveNote } from "./store";
-import { renderWidgetLines } from "./widget";
+import { renderWidgetLines, type WidgetStyle } from "./widget";
 
 const WIDGET_KEY = "free-text";
 
@@ -31,9 +31,23 @@ export default function freeTextExtension(pi: ExtensionAPI): void {
     }
   }
 
+  function widgetStyle(ctx: ExtensionContext): WidgetStyle {
+    const theme = ctx.ui.theme;
+    const box = theme.boxRound;
+    return {
+      topBorder: theme.fg("borderAccent", box.topLeft + box.horizontal.repeat(2)),
+      hint: (t: string): string => theme.fg("dim", t),
+      body: (t: string): string => theme.fg("text", t),
+      shortcut: (t: string): string => theme.fg("dim", t),
+      gutter: theme.fg("borderAccent", box.vertical),
+    };
+  }
+
   function refreshWidget(ctx: ExtensionContext): void {
     if (!ctx.hasUI) return;
-    ctx.ui.setWidget(WIDGET_KEY, renderWidgetLines(content), { placement: "aboveEditor" });
+    ctx.ui.setWidget(WIDGET_KEY, renderWidgetLines(content, { style: widgetStyle(ctx) }), {
+      placement: "belowEditor",
+    });
   }
 
   async function initSession(ctx: ExtensionContext): Promise<void> {
@@ -57,7 +71,8 @@ export default function freeTextExtension(pi: ExtensionAPI): void {
 
   async function openEditor(ctx: ExtensionContext): Promise<void> {
     if (!ctx.hasUI || notePath === undefined) return;
-    const result = await ctx.ui.editor("Session notes", content, undefined, { promptStyle: false });
+    // promptStyle: Enter saves + closes, Shift+Enter inserts a newline.
+    const result = await ctx.ui.editor("Session notes", content, undefined, { promptStyle: true });
     if (result === undefined) return;
     content = result;
     saver?.schedule(content);

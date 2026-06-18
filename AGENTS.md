@@ -90,9 +90,10 @@ Default section order: Purpose, Ownership, Local Contracts, Work Guidance, Verif
 
 ## User Preferences
 
-- Slice 1 interaction is a read-only widget below the status line (`setWidget`, placement `aboveEditor`) plus a `Ctrl+N` shortcut and a `/note` command that open `ctx.ui.editor`. Click-to-open is intentionally out of scope: OMP does not enable mouse reporting or hit-testing, and `setWidget` is render-only.
+- Slice 1 interaction is a read-only widget below the status line (`setWidget`, placement `belowEditor`) plus a `Ctrl+N` shortcut and a `/note` command that open `ctx.ui.editor`. Click-to-open is intentionally out of scope: OMP does not enable mouse reporting or hit-testing, and `setWidget` is render-only.
 - Persistence path is fixed: `~/.omp-free-text/{repo}/{branch}/{session-id}.md`. Outside a git repo, fall back to `basename(cwd)` and `no-branch`.
-- Notes save when the editor closes and flush on `session_shutdown`.
+- Notes save when the editor closes and flush on `session_shutdown`. The editor opens with `promptStyle: true`: Enter saves and closes, Shift+Enter inserts a newline.
+- Widget layout: a top-border line (`╭──`, `borderAccent`) first, then the note body (gutter-prefixed), then the dimmed `(Ctrl+N)` shortcut hint as the final line with no gutter. The border separates the note from whatever renders below it.
 - Evolution (not yet built): an inline editable panel via `setEditorComponent` (keyboard focus, still no mouse click), and an optional Herdr companion pane sharing the same file path.
 
 ## Child DOX Index
