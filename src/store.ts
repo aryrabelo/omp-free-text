@@ -2,7 +2,7 @@
  * Persistence for free-text notes: read/write the markdown file and a small
  * debounced saver so rapid updates coalesce into one write.
  */
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
 /** Read a note file, returning "" when it does not exist yet. */
@@ -19,6 +19,23 @@ export async function loadNote(path: string): Promise<string> {
 export async function saveNote(path: string, content: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, content, "utf8");
+}
+
+/**
+ * Append a timestamped snapshot of the note to its history log, creating parent
+ * directories as needed. Each entry is a `## <ISO timestamp>` heading (with an
+ * optional `(label)` suffix, e.g. `discarded`) followed by the note body, so the
+ * file is a chronological record of every version — saved or thrown away.
+ */
+export async function appendHistory(
+  path: string,
+  content: string,
+  at: Date = new Date(),
+  label?: string,
+): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  const suffix = label ? ` (${label})` : "";
+  await appendFile(path, `## ${at.toISOString()}${suffix}\n\n${content}\n\n`, "utf8");
 }
 
 /** A coalescing, flushable writer for note content. */

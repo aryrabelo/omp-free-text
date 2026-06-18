@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { notePathFor, resolveLocation, ROOT_DIR_NAME, sanitizeSegment } from "../src/paths";
+import { historyPathFor, notePathFor, resolveLocation, ROOT_DIR_NAME, sanitizeSegment } from "../src/paths";
 
 describe("sanitizeSegment", () => {
   test("returns fallback for empty or unusable input", () => {
@@ -72,5 +72,12 @@ describe("notePathFor", () => {
   test("builds ~/.omp-free-text/{repo}/{branch}/{session}.md under the given home", () => {
     const path = notePathFor({ repo: "proj", branch: "main", sessionId: "abc" }, "/home/u");
     expect(path).toBe(join("/home/u", ROOT_DIR_NAME, "proj", "main", "abc.md"));
+  });
+});
+
+describe("historyPathFor", () => {
+  test("builds ~/.omp-free-text/{repo}/{branch}/{session}.history.md under the given home", () => {
+    const path = historyPathFor({ repo: "proj", branch: "main", sessionId: "abc" }, "/home/u");
+    expect(path).toBe(join("/home/u", ROOT_DIR_NAME, "proj", "main", "abc.history.md"));
   });
 });

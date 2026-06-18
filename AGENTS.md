@@ -68,7 +68,7 @@ Default section order: Purpose, Ownership, Local Contracts, Work Guidance, Verif
 ## Work Guidance
 
 - Runtime is Bun; language is TypeScript (`strict`, `verbatimModuleSyntax`, `noUncheckedIndexedAccess`).
-- Keep pure logic (`src/paths.ts`, `src/store.ts`, `src/widget.ts`) free of OMP, TUI, and git imports so it stays unit-testable. Only `src/main.ts` may import `@oh-my-pi/pi-coding-agent`.
+- Keep pure logic (`src/paths.ts`, `src/store.ts`, `src/widget.ts`, `src/editor.ts`) free of OMP, TUI, and git imports so it stays unit-testable. Only `src/main.ts` may import `@oh-my-pi/pi-coding-agent`.
 - Ground every OMP API call against the installed `@oh-my-pi/pi-coding-agent` type definitions. Never invent API.
 - Gate-enforced conventions: name exported types instead of leaking `ReturnType<typeof fn>` (timer handles excepted); no redundant `clearTimeout`/`clearInterval` truthiness guards; explicit types on exported and handler parameters (biome `useExplicitType`); no `async` without `await`.
 - Git commit messages and PR titles/descriptions are English, Conventional Commits. No CJK in any generated artifact.
@@ -90,11 +90,12 @@ Default section order: Purpose, Ownership, Local Contracts, Work Guidance, Verif
 
 ## User Preferences
 
-- Slice 1 interaction is a read-only widget below the status line (`setWidget`, placement `belowEditor`) plus a `Ctrl+N` shortcut and a `/note` command that open `ctx.ui.editor`. Click-to-open is intentionally out of scope: OMP does not enable mouse reporting or hit-testing, and `setWidget` is render-only.
+- Slice 1 interaction is a read-only widget below the status line (`setWidget`, placement `belowEditor`) plus a `Ctrl+N` shortcut and a `/note` command that open the notes editor. Editing uses a `CustomEditor` overlay via `ctx.ui.custom` (keyboard focus, no mouse) rather than `ctx.ui.editor`, because the built-in editor discards the buffer on Esc. Click-to-open is intentionally out of scope: OMP does not enable mouse reporting or hit-testing, and `setWidget` is render-only.
 - Persistence path is fixed: `~/.omp-free-text/{repo}/{branch}/{session-id}.md`. Outside a git repo, fall back to `basename(cwd)` and `no-branch`.
-- Notes save when the editor closes and flush on `session_shutdown`. The editor opens with `promptStyle: true`: Enter saves and closes, Shift+Enter inserts a newline.
+- Editor keys: Enter saves and closes, Shift+Enter inserts a newline, Esc closes. Esc never silently drops work — an unchanged buffer closes quietly, but an Esc with unsaved changes triggers a `ctx.ui.confirm` save/discard prompt. Saves are debounced and flushed on `session_shutdown` and before re-init on `session_switch`.
+- History: every changed save appends a timestamped snapshot (`## <ISO timestamp>` + the note body) to `~/.omp-free-text/{repo}/{branch}/{session-id}.history.md`, an append-only sibling of the note. A draft discarded at the Esc prompt is also appended (labelled `(discarded)`), so nothing typed is ever truly lost and prior versions stay recoverable.
 - Widget layout: a top-border line (`╭──`, `borderAccent`) first, then the note body (gutter-prefixed), then the dimmed `(Ctrl+N)` shortcut hint as the final line with no gutter. The border separates the note from whatever renders below it.
-- Evolution (not yet built): an inline editable panel via `setEditorComponent` (keyboard focus, still no mouse click), and an optional Herdr companion pane sharing the same file path.
+- Evolution (not yet built): an inline editable panel via `setEditorComponent` replacing the popup overlay (keyboard focus, still no mouse click), and an optional Herdr companion pane sharing the same file path.
 
 ## Child DOX Index
 

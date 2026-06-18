@@ -75,3 +75,8 @@ export function resolveLocation(raw: RawLocation): ResolvedLocation {
 export function notePathFor(loc: ResolvedLocation, home: string = homedir()): string {
   return join(home, ROOT_DIR_NAME, loc.repo, loc.branch, `${loc.sessionId}.md`);
 }
+
+/** Absolute path to the append-only history log for a resolved location. */
+export function historyPathFor(loc: ResolvedLocation, home: string = homedir()): string {
+  return join(home, ROOT_DIR_NAME, loc.repo, loc.branch, `${loc.sessionId}.history.md`);
+}
