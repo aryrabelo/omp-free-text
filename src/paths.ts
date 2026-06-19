@@ -21,32 +21,32 @@ export const ROOT_DIR_NAME = ".omp-free-text";
  * Returns `fallback` when nothing usable remains.
  */
 export function sanitizeSegment(input: string, fallback: string): string {
-  const slug = input
-    .normalize("NFKD")
-    .replace(/[/\\]+/g, "-")
-    .replace(/[^\w.-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^[-.]+|[-.]+$/g, "");
-  return slug.length > 0 ? slug : fallback;
+	const slug = input
+		.normalize("NFKD")
+		.replace(/[/\\]+/g, "-")
+		.replace(/[^\w.-]+/g, "-")
+		.replace(/-+/g, "-")
+		.replace(/^[-.]+|[-.]+$/g, "");
+	return slug.length > 0 ? slug : fallback;
 }
 
 /** Raw, possibly-missing inputs gathered at runtime. */
 export interface RawLocation {
-  /** Working directory of the session (`ctx.cwd`). Always present. */
-  cwd: string;
-  /** `git rev-parse --show-toplevel` output, or null/undefined outside a repo. */
-  repoToplevel?: string | null;
-  /** `git rev-parse --abbrev-ref HEAD` output, or null/undefined outside a repo. */
-  branch?: string | null;
-  /** OMP session id (`ctx.sessionManager.getSessionId()`). Always present. */
-  sessionId: string;
+	/** Working directory of the session (`ctx.cwd`). Always present. */
+	cwd: string;
+	/** `git rev-parse --show-toplevel` output, or null/undefined outside a repo. */
+	repoToplevel?: string | null;
+	/** `git rev-parse --abbrev-ref HEAD` output, or null/undefined outside a repo. */
+	branch?: string | null;
+	/** OMP session id (`ctx.sessionManager.getSessionId()`). Always present. */
+	sessionId: string;
 }
 
 /** Sanitized, always-populated path segments. */
 export interface ResolvedLocation {
-  repo: string;
-  branch: string;
-  sessionId: string;
+	repo: string;
+	branch: string;
+	sessionId: string;
 }
 
 /**
@@ -56,32 +56,37 @@ export interface ResolvedLocation {
  * - sessionId: the OMP session id.
  */
 export function resolveLocation(raw: RawLocation): ResolvedLocation {
-  const top = raw.repoToplevel?.trim();
-  const repoBase = top && top.length > 0 ? basename(top) : basename(raw.cwd);
-  const repo = sanitizeSegment(repoBase, "no-repo");
+	const top = raw.repoToplevel?.trim();
+	const repoBase = top && top.length > 0 ? basename(top) : basename(raw.cwd);
+	const repo = sanitizeSegment(repoBase, "no-repo");
 
-  const rawBranch = raw.branch?.trim();
-  let branchName: string;
-  if (!rawBranch || rawBranch.length === 0) branchName = "no-branch";
-  else if (rawBranch === "HEAD") branchName = "detached";
-  else branchName = rawBranch;
-  const branch = sanitizeSegment(branchName, "no-branch");
+	const rawBranch = raw.branch?.trim();
+	let branchName: string;
+	if (!rawBranch || rawBranch.length === 0) branchName = "no-branch";
+	else if (rawBranch === "HEAD") branchName = "detached";
+	else branchName = rawBranch;
+	const branch = sanitizeSegment(branchName, "no-branch");
 
-  const sessionId = sanitizeSegment(raw.sessionId, "no-session");
-  return { repo, branch, sessionId };
+	const sessionId = sanitizeSegment(raw.sessionId, "no-session");
+	return { repo, branch, sessionId };
 }
 
 /** Absolute path to the markdown note file for a resolved location. */
 export function notePathFor(loc: ResolvedLocation, home: string = homedir()): string {
-  return join(home, ROOT_DIR_NAME, loc.repo, loc.branch, `${loc.sessionId}.md`);
+	return join(home, ROOT_DIR_NAME, loc.repo, loc.branch, `${loc.sessionId}.md`);
 }
 
 /** Absolute path to the append-only history log for a resolved location. */
 export function historyPathFor(loc: ResolvedLocation, home: string = homedir()): string {
-  return join(home, ROOT_DIR_NAME, loc.repo, loc.branch, `${loc.sessionId}.history.md`);
+	return join(home, ROOT_DIR_NAME, loc.repo, loc.branch, `${loc.sessionId}.history.md`);
 }
 
 /** Absolute directory holding every session note for a resolved repo/branch. */
 export function sessionsDirFor(loc: ResolvedLocation, home: string = homedir()): string {
-  return join(home, ROOT_DIR_NAME, loc.repo, loc.branch);
+	return join(home, ROOT_DIR_NAME, loc.repo, loc.branch);
+}
+
+/** Global shortcut-overrides config file (not per-repo/branch). */
+export function configPathFor(home: string = homedir()): string {
+	return join(home, ROOT_DIR_NAME, "config.json");
 }

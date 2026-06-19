@@ -16,6 +16,6 @@ export type CloseAction = "save" | "discard" | "ask";
  * - Esc (cancel) with unsaved changes asks the user (save or discard).
  */
 export function resolveCloseAction(original: string, next: string, submitted: boolean): CloseAction {
-  if (submitted) return "save";
-  return next === original ? "discard" : "ask";
+	if (submitted) return "save";
+	return next === original ? "discard" : "ask";
 }
