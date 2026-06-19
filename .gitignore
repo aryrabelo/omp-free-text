@@ -5,3 +5,8 @@ dist/
 *.tsbuildinfo
 
 *.swp
+.env
+.env.*
+
+# Internal DOX contracts — kept local, not published
+AGENTS.md
