@@ -1,0 +1,61 @@
+name: Bug report
+description: Report something that isn't working as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the problem?
+      placeholder: |
+        1. Start OMP in a repo
+        2. Press Ctrl+N and type '...'
+        3. Press Ctrl+↓ to dispatch the head task
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: note-queue
+    attributes:
+      label: Note / queue behavior
+      description: >
+        What did the notes panel or prompt queue do? Include the relevant note
+        content (e.g. the checkbox tasks, any `---` barriers) and the glyph
+        states you saw (☐ pending, ▸ in-flight, ✓ done) if applicable.
+    validations:
+      required: false
+  - type: input
+    id: omp-version
+    attributes:
+      label: OMP (Oh My Pi) version
+      placeholder: "e.g. 16.2.0"
+    validations:
+      required: true
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version or commit
+      placeholder: "e.g. 0.1.0 or a commit SHA"
+    validations:
+      required: false
+  - type: input
+    id: os-terminal
+    attributes:
+      label: OS and terminal
+      placeholder: "e.g. macOS 14.5 + ghostty 1.3.2, Ubuntu 24.04 + tmux"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Logs, screenshots, your `~/.omp-free-text/config.json`, or whether you run inside Herdr (HERDR_ENV=1).
+    validations:
+      required: false
