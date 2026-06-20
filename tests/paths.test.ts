@@ -93,28 +93,41 @@ describe("resolveLocation", () => {
 
 describe("notePathFor", () => {
 	test("builds ~/.omp-free-text/{repo}/{branch}/{session}.md under the given home", () => {
-		const path = notePathFor({ repo: "proj", branch: "main", sessionId: "abc" }, "/home/u");
+		const path = notePathFor(
+			{ repo: "proj", branch: "main", sessionId: "abc" },
+			"/home/u",
+		);
 		expect(path).toBe(join("/home/u", ROOT_DIR_NAME, "proj", "main", "abc.md"));
 	});
 });
 
 describe("historyPathFor", () => {
 	test("builds ~/.omp-free-text/{repo}/{branch}/{session}.history.md under the given home", () => {
-		const path = historyPathFor({ repo: "proj", branch: "main", sessionId: "abc" }, "/home/u");
-		expect(path).toBe(join("/home/u", ROOT_DIR_NAME, "proj", "main", "abc.history.md"));
+		const path = historyPathFor(
+			{ repo: "proj", branch: "main", sessionId: "abc" },
+			"/home/u",
+		);
+		expect(path).toBe(
+			join("/home/u", ROOT_DIR_NAME, "proj", "main", "abc.history.md"),
+		);
 	});
 });
 
 describe("sessionsDirFor", () => {
 	test("is the {repo}/{branch} directory under the root", () => {
-		expect(sessionsDirFor({ repo: "proj", branch: "main", sessionId: "x" }, "/home/u")).toBe(
-			join("/home/u", ROOT_DIR_NAME, "proj", "main"),
-		);
+		expect(
+			sessionsDirFor(
+				{ repo: "proj", branch: "main", sessionId: "x" },
+				"/home/u",
+			),
+		).toBe(join("/home/u", ROOT_DIR_NAME, "proj", "main"));
 	});
 });
 
 describe("configPathFor", () => {
 	test("returns ~/.omp-free-text/config.json under the given home", () => {
-		expect(configPathFor("/home/u")).toBe(join("/home/u", ROOT_DIR_NAME, "config.json"));
+		expect(configPathFor("/home/u")).toBe(
+			join("/home/u", ROOT_DIR_NAME, "config.json"),
+		);
 	});
 });

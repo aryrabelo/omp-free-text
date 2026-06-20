@@ -1,8 +1,22 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises";
+import {
+	mkdir,
+	mkdtemp,
+	readFile,
+	rm,
+	utimes,
+	writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { appendHistory, createDebouncedSaver, listNotes, loadConfigText, loadNote, saveNote } from "../src/store";
+import {
+	appendHistory,
+	createDebouncedSaver,
+	listNotes,
+	loadConfigText,
+	loadNote,
+	saveNote,
+} from "../src/store";
 
 let dir: string;
 
@@ -33,14 +47,23 @@ describe("appendHistory", () => {
 		await appendHistory(path, "first", new Date("2026-06-18T10:00:00.000Z"));
 		await appendHistory(path, "second", new Date("2026-06-18T11:30:00.000Z"));
 		const log = await readFile(path, "utf8");
-		expect(log).toBe("## 2026-06-18T10:00:00.000Z\n\nfirst\n\n## 2026-06-18T11:30:00.000Z\n\nsecond\n\n");
+		expect(log).toBe(
+			"## 2026-06-18T10:00:00.000Z\n\nfirst\n\n## 2026-06-18T11:30:00.000Z\n\nsecond\n\n",
+		);
 		expect(log.indexOf("first")).toBeLessThan(log.indexOf("second"));
 	});
 
 	test("labels an entry when given a label (e.g. a discarded draft)", async () => {
 		const path = join(dir, "h.md");
-		await appendHistory(path, "draft body", new Date("2026-06-18T12:00:00.000Z"), "discarded");
-		expect(await readFile(path, "utf8")).toBe("## 2026-06-18T12:00:00.000Z (discarded)\n\ndraft body\n\n");
+		await appendHistory(
+			path,
+			"draft body",
+			new Date("2026-06-18T12:00:00.000Z"),
+			"discarded",
+		);
+		expect(await readFile(path, "utf8")).toBe(
+			"## 2026-06-18T12:00:00.000Z (discarded)\n\ndraft body\n\n",
+		);
 	});
 });
 

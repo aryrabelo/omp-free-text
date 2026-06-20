@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_SHORTCUTS, humanizeKey, parseShortcutConfig, queueHint } from "../src/config";
+import {
+	DEFAULT_SHORTCUTS,
+	humanizeKey,
+	parseShortcutConfig,
+	queueHint,
+} from "../src/config";
 
 describe("parseShortcutConfig", () => {
 	test("empty string returns DEFAULT_SHORTCUTS with no warnings", () => {
@@ -27,7 +32,9 @@ describe("parseShortcutConfig", () => {
 	});
 
 	test("partial override keeps defaults for unspecified keys", () => {
-		const result = parseShortcutConfig('{"shortcuts":{"queueToggleAuto":"ctrl+g"}}');
+		const result = parseShortcutConfig(
+			'{"shortcuts":{"queueToggleAuto":"ctrl+g"}}',
+		);
 		expect(result.shortcuts.queueToggleAuto).toBe("ctrl+g");
 		expect(result.shortcuts.editNotes).toBe(DEFAULT_SHORTCUTS.editNotes);
 		expect(result.shortcuts.queueStep).toBe(DEFAULT_SHORTCUTS.queueStep);
@@ -38,11 +45,15 @@ describe("parseShortcutConfig", () => {
 		const result = parseShortcutConfig("{not json");
 		expect(result.shortcuts).toEqual(DEFAULT_SHORTCUTS);
 		expect(result.warnings).toHaveLength(1);
-		expect(result.warnings.some((w) => w.startsWith("Invalid config.json:"))).toBe(true);
+		expect(
+			result.warnings.some((w) => w.startsWith("Invalid config.json:")),
+		).toBe(true);
 	});
 
 	test("bad modifier prefix falls back to default and warns mentioning the key", () => {
-		const result = parseShortcutConfig('{"shortcuts":{"queueStep":"bogus+down"}}');
+		const result = parseShortcutConfig(
+			'{"shortcuts":{"queueStep":"bogus+down"}}',
+		);
 		expect(result.shortcuts.queueStep).toBe(DEFAULT_SHORTCUTS.queueStep);
 		expect(result.warnings.some((w) => w.includes("queueStep"))).toBe(true);
 	});
@@ -54,7 +65,9 @@ describe("parseShortcutConfig", () => {
 	});
 
 	test("trailing '+' (ctrl+shift+) falls back to default with warning", () => {
-		const result = parseShortcutConfig('{"shortcuts":{"editNotes":"ctrl+shift+"}}');
+		const result = parseShortcutConfig(
+			'{"shortcuts":{"editNotes":"ctrl+shift+"}}',
+		);
 		expect(result.shortcuts.editNotes).toBe(DEFAULT_SHORTCUTS.editNotes);
 		expect(result.warnings.some((w) => w.includes("editNotes"))).toBe(true);
 	});
@@ -66,7 +79,9 @@ describe("parseShortcutConfig", () => {
 	});
 
 	test("normalizes uppercase/mixed-case input to lowercase", () => {
-		const result = parseShortcutConfig('{"shortcuts":{"queueToggleAuto":"CTRL+Shift+Down"}}');
+		const result = parseShortcutConfig(
+			'{"shortcuts":{"queueToggleAuto":"CTRL+Shift+Down"}}',
+		);
 		expect(result.shortcuts.queueToggleAuto).toBe("ctrl+shift+down");
 		expect(result.warnings).toHaveLength(0);
 	});
@@ -116,17 +131,28 @@ describe("humanizeKey", () => {
 
 describe("queueHint", () => {
 	test("shows edit, step, and toggle keys when auto is off", () => {
-		expect(queueHint(DEFAULT_SHORTCUTS, false)).toBe("(Ctrl+N · Ctrl+↓ queue · Ctrl+Shift+↓ auto)");
+		expect(queueHint(DEFAULT_SHORTCUTS, false)).toBe(
+			"(Ctrl+N · Ctrl+↓ queue · Ctrl+Shift+↓ auto)",
+		);
 	});
 
 	test("marks auto-run active with a trailing ▶", () => {
-		expect(queueHint(DEFAULT_SHORTCUTS, true)).toBe("(Ctrl+N · Ctrl+↓ queue · Ctrl+Shift+↓ auto ▶)");
+		expect(queueHint(DEFAULT_SHORTCUTS, true)).toBe(
+			"(Ctrl+N · Ctrl+↓ queue · Ctrl+Shift+↓ auto ▶)",
+		);
 	});
 
 	test("humanizes custom configured keys", () => {
-		expect(queueHint({ editNotes: "ctrl+e", queueStep: "alt+down", queueToggleAuto: "ctrl+g" }, false)).toBe(
-			"(Ctrl+E · Alt+↓ queue · Ctrl+G auto)",
-		);
+		expect(
+			queueHint(
+				{
+					editNotes: "ctrl+e",
+					queueStep: "alt+down",
+					queueToggleAuto: "ctrl+g",
+				},
+				false,
+			),
+		).toBe("(Ctrl+E · Alt+↓ queue · Ctrl+G auto)");
 	});
 
 	test("appends an unlock instruction when blocked at a barrier", () => {

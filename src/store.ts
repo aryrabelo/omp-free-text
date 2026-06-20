@@ -2,7 +2,14 @@
  * Persistence for free-text notes: read/write the markdown file and a small
  * debounced saver so rapid updates coalesce into one write.
  */
-import { appendFile, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import {
+	appendFile,
+	mkdir,
+	readdir,
+	readFile,
+	stat,
+	writeFile,
+} from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 /** Read a note file, returning "" when it does not exist yet. */
@@ -52,11 +59,16 @@ export async function listNotes(dir: string): Promise<NoteSummary[]> {
 		if ((err as NodeJS.ErrnoException).code === "ENOENT") return [];
 		throw err;
 	}
-	const files = entries.filter((f) => f.endsWith(".md") && !f.endsWith(".history.md"));
+	const files = entries.filter(
+		(f) => f.endsWith(".md") && !f.endsWith(".history.md"),
+	);
 	const summaries = await Promise.all(
 		files.map(async (file): Promise<NoteSummary> => {
 			const path = join(dir, file);
-			const [info, content] = await Promise.all([stat(path), readFile(path, "utf8")]);
+			const [info, content] = await Promise.all([
+				stat(path),
+				readFile(path, "utf8"),
+			]);
 			const preview =
 				content
 					.split("\n")
@@ -87,7 +99,11 @@ export async function appendHistory(
 ): Promise<void> {
 	await mkdir(dirname(path), { recursive: true });
 	const suffix = label ? ` (${label})` : "";
-	await appendFile(path, `## ${at.toISOString()}${suffix}\n\n${content}\n\n`, "utf8");
+	await appendFile(
+		path,
+		`## ${at.toISOString()}${suffix}\n\n${content}\n\n`,
+		"utf8",
+	);
 }
 
 /** A coalescing, flushable writer for note content. */
@@ -105,7 +121,10 @@ export interface DebouncedSaver {
  * within `delayMs` collapse to a single write of the latest content. Writes are
  * serialized so `flush` resolves only once everything has been persisted.
  */
-export function createDebouncedSaver(save: (content: string) => Promise<void>, delayMs = 400): DebouncedSaver {
+export function createDebouncedSaver(
+	save: (content: string) => Promise<void>,
+	delayMs = 400,
+): DebouncedSaver {
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	let pending: string | undefined;
 	let chain: Promise<void> = Promise.resolve();

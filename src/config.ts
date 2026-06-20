@@ -51,7 +51,11 @@ function normalizeKey(raw: unknown): string | undefined {
 	const tokens = raw.trim().toLowerCase().split("+");
 	const last = tokens[tokens.length - 1];
 	// last is string | undefined (noUncheckedIndexedAccess); !last catches "" and undefined.
-	if (!last || last in MODIFIERS || !tokens.slice(0, -1).every((p) => p in MODIFIERS)) {
+	if (
+		!last ||
+		last in MODIFIERS ||
+		!tokens.slice(0, -1).every((p) => p in MODIFIERS)
+	) {
 		return undefined;
 	}
 	return tokens.join("+");
@@ -104,7 +108,8 @@ export function parseShortcutConfig(raw: string): ParsedShortcuts {
 
 	for (const key of ["editNotes", "queueStep", "queueToggleAuto"] as const) {
 		const override = scObj[key];
-		if (override !== undefined) applyOverride(shortcuts, key, override, warnings);
+		if (override !== undefined)
+			applyOverride(shortcuts, key, override, warnings);
 	}
 
 	return { shortcuts, warnings };
@@ -119,7 +124,8 @@ export function humanizeKey(key: string): string {
 	return key
 		.split("+")
 		.map((token) => {
-			if (token in MODIFIERS) return token.charAt(0).toUpperCase() + token.slice(1);
+			if (token in MODIFIERS)
+				return token.charAt(0).toUpperCase() + token.slice(1);
 			const special = BASE_SPECIAL[token];
 			if (special !== undefined) return special;
 			if (token.length === 1) return token.toUpperCase();
@@ -137,7 +143,11 @@ export function humanizeKey(key: string): string {
  * Example (defaults, auto off): "(Ctrl+N · Ctrl+↓ queue · Ctrl+Shift+↓ auto)".
  * Example (blocked): "(Ctrl+N · Ctrl+↓ queue · Ctrl+Shift+↓ auto) ⏸ paused — Ctrl+↓ passes ---".
  */
-export function queueHint(shortcuts: ShortcutConfig, auto: boolean, blocked = false): string {
+export function queueHint(
+	shortcuts: ShortcutConfig,
+	auto: boolean,
+	blocked = false,
+): string {
 	const edit = humanizeKey(shortcuts.editNotes);
 	const step = humanizeKey(shortcuts.queueStep);
 	const toggle = humanizeKey(shortcuts.queueToggleAuto);

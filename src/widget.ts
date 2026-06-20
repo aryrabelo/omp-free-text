@@ -89,7 +89,13 @@ function glyphFor(state: TaskState): string {
  * (the `continuation` styler when `state` is null). Done rows strike ONLY the text
  * (not the prefix/glyph), mirroring OMP's done todos.
  */
-function composeRow(style: WidgetStyle, prefix: string, glyph: string, text: string, state: TaskState | null): string {
+function composeRow(
+	style: WidgetStyle,
+	prefix: string,
+	glyph: string,
+	text: string,
+	state: TaskState | null,
+): string {
 	const content = `${prefix}${glyph} ${state === "done" ? style.strike(text) : text}`;
 	if (state === "pending") return style.taskPending(content);
 	if (state === "inflight") return style.taskInflight(content);
@@ -122,7 +128,8 @@ function renderBody(lines: string[], style: WidgetStyle): string[] {
 			parent = state;
 			return composeRow(style, prefix, glyphFor(state), text, state);
 		}
-		if (CONTINUATION.test(line)) return composeRow(style, prefix, GLYPH_CONTINUATION, text, parent);
+		if (CONTINUATION.test(line))
+			return composeRow(style, prefix, GLYPH_CONTINUATION, text, parent);
 		parent = null;
 		return style.body(prefix + line);
 	});
@@ -141,7 +148,12 @@ function collapseDoneBlocks(lines: string[], maxDone: number): string[] {
 	const drop = new Set<number>();
 	for (const start of doneStarts.slice(0, doneStarts.length - maxDone)) {
 		drop.add(start);
-		for (let j = start + 1; j < lines.length && CONTINUATION.test(lines[j] ?? ""); j++) drop.add(j);
+		for (
+			let j = start + 1;
+			j < lines.length && CONTINUATION.test(lines[j] ?? "");
+			j++
+		)
+			drop.add(j);
 	}
 	return lines.filter((_, i): boolean => !drop.has(i));
 }
@@ -152,20 +164,34 @@ function collapseDoneBlocks(lines: string[], maxDone: number): string[] {
  * `content` (most recent, done-capped), then an indented shortcut-hint line. Clamped to
  * `maxLines` (max 10). The title block and the hint are absent under {@link PLAIN_STYLE}.
  */
-export function renderWidgetLines(content: string, options: WidgetOptions = {}): string[] {
+export function renderWidgetLines(
+	content: string,
+	options: WidgetOptions = {},
+): string[] {
 	const style = options.style ?? PLAIN_STYLE;
 	const maxLines = Math.max(1, Math.min(options.maxLines ?? 10, 10));
-	const footer = style.indent + style.shortcut(options.shortcut ?? SHORTCUT_HINT);
+	const footer =
+		style.indent + style.shortcut(options.shortcut ?? SHORTCUT_HINT);
 	const head = style.title === "" ? [] : ["", style.title];
 	const bodyBudget = Math.max(maxLines - head.length - 1, 0);
 	const trimmed = content.replace(/\s+$/, "");
 
-	const body = renderWidgetBody(trimmed, bodyBudget, options.maxDone ?? 2, style);
+	const body = renderWidgetBody(
+		trimmed,
+		bodyBudget,
+		options.maxDone ?? 2,
+		style,
+	);
 	return [...head, ...body, footer].slice(0, maxLines);
 }
 
 /** Body lines for the widget: indented empty-hint, or the done-capped tail of the note. */
-function renderWidgetBody(trimmed: string, bodyBudget: number, maxDone: number, style: WidgetStyle): string[] {
+function renderWidgetBody(
+	trimmed: string,
+	bodyBudget: number,
+	maxDone: number,
+	style: WidgetStyle,
+): string[] {
 	if (bodyBudget === 0) return [];
 	if (trimmed.length === 0) return [style.indent + style.hint(EMPTY_HINT)];
 	const capped = collapseDoneBlocks(trimmed.split("\n"), Math.max(0, maxDone));

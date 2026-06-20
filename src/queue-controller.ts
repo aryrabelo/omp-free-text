@@ -10,11 +10,20 @@
  *
  * Pure queue parsing lives in `./queue`; this module owns the OMP wiring.
  */
-import type { ExtensionAPI, ExtensionContext, SessionStopEvent } from "@oh-my-pi/pi-coding-agent";
+import type {
+	ExtensionAPI,
+	ExtensionContext,
+	SessionStopEvent,
+} from "@oh-my-pi/pi-coding-agent";
 import type { KeyId } from "@oh-my-pi/pi-tui";
 import type { ShortcutConfig } from "./config";
 import { humanizeKey } from "./config";
-import { completeInflight, findHead, markInflight, removeBarrier } from "./queue";
+import {
+	completeInflight,
+	findHead,
+	markInflight,
+	removeBarrier,
+} from "./queue";
 
 /**
  * Whether a settling turn ended badly, so auto-run must halt instead of feeding
@@ -23,14 +32,26 @@ import { completeInflight, findHead, markInflight, removeBarrier } from "./queue
  */
 function turnFailed(event: SessionStopEvent): boolean {
 	const last = event.last_assistant_message;
-	return !!last && "stopReason" in last && (last.stopReason === "error" || last.stopReason === "aborted");
+	return (
+		!!last &&
+		"stopReason" in last &&
+		(last.stopReason === "error" || last.stopReason === "aborted")
+	);
 }
 
 /** Best-effort herdr HITL ping (no-op outside herdr); a missing/older herdr must never break the session. */
 async function pingHerdr(pi: ExtensionAPI, label: string): Promise<void> {
 	if (process.env.HERDR_ENV !== "1") return;
 	try {
-		await pi.exec("herdr", ["notification", "show", "Queue paused - your turn", "--body", label, "--sound", "request"]);
+		await pi.exec("herdr", [
+			"notification",
+			"show",
+			"Queue paused - your turn",
+			"--body",
+			label,
+			"--sound",
+			"request",
+		]);
 	} catch {
 		// Best-effort: a missing/older herdr must never break the session.
 	}
@@ -72,7 +93,10 @@ export function createQueue(deps: QueueDeps): QueueController {
 		blocked = active;
 		if (process.env.HERDR_ENV !== "1") return;
 		try {
-			pi.events.emit("herdr:blocked", active ? { active: true, label } : { active: false });
+			pi.events.emit(
+				"herdr:blocked",
+				active ? { active: true, label } : { active: false },
+			);
 		} catch {
 			// Best-effort: the herdr integration may be absent or older.
 		}
@@ -98,7 +122,10 @@ export function createQueue(deps: QueueDeps): QueueController {
 		auto = false;
 		setBlocked(true, deps.label());
 		deps.refresh(ctx);
-		ctx.ui.notify(`Queue paused at --- (human in the loop) — ${humanizeKey(deps.shortcuts.queueStep)} to pass`, "info");
+		ctx.ui.notify(
+			`Queue paused at --- (human in the loop) — ${humanizeKey(deps.shortcuts.queueStep)} to pass`,
+			"info",
+		);
 		await pingHerdr(pi, deps.label());
 	}
 
@@ -111,7 +138,10 @@ export function createQueue(deps: QueueDeps): QueueController {
 
 	async function step(ctx: ExtensionContext): Promise<void> {
 		if (auto) {
-			ctx.ui.notify("Auto-run is on — toggle it off (Ctrl+shift+down) to step manually", "info");
+			ctx.ui.notify(
+				"Auto-run is on — toggle it off (Ctrl+shift+down) to step manually",
+				"info",
+			);
 			return;
 		}
 		// A manual queue-step is the human engaging — clear any pause state.
@@ -138,7 +168,10 @@ export function createQueue(deps: QueueDeps): QueueController {
 	}
 
 	/** In auto-run, advance after a settle: halt on failure/barrier, else feed one task. */
-	async function autoAdvance(event: SessionStopEvent, ctx: ExtensionContext): Promise<void> {
+	async function autoAdvance(
+		event: SessionStopEvent,
+		ctx: ExtensionContext,
+	): Promise<void> {
 		if (turnFailed(event)) {
 			auto = false;
 			deps.refresh(ctx);
@@ -167,7 +200,8 @@ export function createQueue(deps: QueueDeps): QueueController {
 	});
 
 	pi.registerShortcut(deps.shortcuts.queueStep as KeyId, {
-		description: "Queue: send the next note line (delete a --- barrier to pass it)",
+		description:
+			"Queue: send the next note line (delete a --- barrier to pass it)",
 		handler: (ctx: ExtensionContext): Promise<void> => step(ctx),
 	});
 	pi.registerShortcut(deps.shortcuts.queueToggleAuto as KeyId, {

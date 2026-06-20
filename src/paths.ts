@@ -72,17 +72,32 @@ export function resolveLocation(raw: RawLocation): ResolvedLocation {
 }
 
 /** Absolute path to the markdown note file for a resolved location. */
-export function notePathFor(loc: ResolvedLocation, home: string = homedir()): string {
+export function notePathFor(
+	loc: ResolvedLocation,
+	home: string = homedir(),
+): string {
 	return join(home, ROOT_DIR_NAME, loc.repo, loc.branch, `${loc.sessionId}.md`);
 }
 
 /** Absolute path to the append-only history log for a resolved location. */
-export function historyPathFor(loc: ResolvedLocation, home: string = homedir()): string {
-	return join(home, ROOT_DIR_NAME, loc.repo, loc.branch, `${loc.sessionId}.history.md`);
+export function historyPathFor(
+	loc: ResolvedLocation,
+	home: string = homedir(),
+): string {
+	return join(
+		home,
+		ROOT_DIR_NAME,
+		loc.repo,
+		loc.branch,
+		`${loc.sessionId}.history.md`,
+	);
 }
 
 /** Absolute directory holding every session note for a resolved repo/branch. */
-export function sessionsDirFor(loc: ResolvedLocation, home: string = homedir()): string {
+export function sessionsDirFor(
+	loc: ResolvedLocation,
+	home: string = homedir(),
+): string {
 	return join(home, ROOT_DIR_NAME, loc.repo, loc.branch);
 }
 

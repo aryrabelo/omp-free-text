@@ -12,39 +12,66 @@ import {
 
 describe("parseTaskLine", () => {
 	test("pending checkbox — space state char", () => {
-		expect(parseTaskLine("- [ ] do the thing")).toEqual({ state: "pending", text: "do the thing" });
+		expect(parseTaskLine("- [ ] do the thing")).toEqual({
+			state: "pending",
+			text: "do the thing",
+		});
 	});
 
 	test("pending checkbox — asterisk bullet prefix", () => {
-		expect(parseTaskLine("* [ ] another task")).toEqual({ state: "pending", text: "another task" });
+		expect(parseTaskLine("* [ ] another task")).toEqual({
+			state: "pending",
+			text: "another task",
+		});
 	});
 
 	test("inflight checkbox", () => {
-		expect(parseTaskLine("- [>] running now")).toEqual({ state: "inflight", text: "running now" });
+		expect(parseTaskLine("- [>] running now")).toEqual({
+			state: "inflight",
+			text: "running now",
+		});
 	});
 
 	test("done checkbox — lowercase x", () => {
-		expect(parseTaskLine("- [x] finished")).toEqual({ state: "done", text: "finished" });
+		expect(parseTaskLine("- [x] finished")).toEqual({
+			state: "done",
+			text: "finished",
+		});
 	});
 
 	test("done checkbox — uppercase X", () => {
-		expect(parseTaskLine("- [X] also finished")).toEqual({ state: "done", text: "also finished" });
+		expect(parseTaskLine("- [X] also finished")).toEqual({
+			state: "done",
+			text: "also finished",
+		});
 	});
 
 	test("non-checkbox plain line → state null, text is trimmed line", () => {
-		expect(parseTaskLine("  plain text  ")).toEqual({ state: null, text: "plain text" });
+		expect(parseTaskLine("  plain text  ")).toEqual({
+			state: null,
+			text: "plain text",
+		});
 	});
 
 	test("non-checkbox dash bullet → state null, marker stripped from text", () => {
-		expect(parseTaskLine("- bullet item")).toEqual({ state: null, text: "bullet item" });
+		expect(parseTaskLine("- bullet item")).toEqual({
+			state: null,
+			text: "bullet item",
+		});
 	});
 
 	test("non-checkbox asterisk bullet → state null, marker stripped", () => {
-		expect(parseTaskLine("* another bullet")).toEqual({ state: null, text: "another bullet" });
+		expect(parseTaskLine("* another bullet")).toEqual({
+			state: null,
+			text: "another bullet",
+		});
 	});
 
 	test("operates on the trimmed line", () => {
-		expect(parseTaskLine("  - [ ] padded task  ")).toEqual({ state: "pending", text: "padded task" });
+		expect(parseTaskLine("  - [ ] padded task  ")).toEqual({
+			state: "pending",
+			text: "padded task",
+		});
 	});
 });
 
@@ -58,19 +85,35 @@ describe("findHead", () => {
 	});
 
 	test("first checkbox-pending is the head", () => {
-		expect(findHead("- [ ] first\n- [ ] second")).toEqual({ kind: "prompt", line: 0, text: "first" });
+		expect(findHead("- [ ] first\n- [ ] second")).toEqual({
+			kind: "prompt",
+			line: 0,
+			text: "first",
+		});
 	});
 
 	test("skips done checkbox (lowercase x)", () => {
-		expect(findHead("- [x] done\n- [ ] next")).toEqual({ kind: "prompt", line: 1, text: "next" });
+		expect(findHead("- [x] done\n- [ ] next")).toEqual({
+			kind: "prompt",
+			line: 1,
+			text: "next",
+		});
 	});
 
 	test("skips done checkbox (uppercase X)", () => {
-		expect(findHead("- [X] done\n- [ ] next")).toEqual({ kind: "prompt", line: 1, text: "next" });
+		expect(findHead("- [X] done\n- [ ] next")).toEqual({
+			kind: "prompt",
+			line: 1,
+			text: "next",
+		});
 	});
 
 	test("skips inflight checkbox", () => {
-		expect(findHead("- [>] running\n- [ ] pending")).toEqual({ kind: "prompt", line: 1, text: "pending" });
+		expect(findHead("- [>] running\n- [ ] pending")).toEqual({
+			kind: "prompt",
+			line: 1,
+			text: "pending",
+		});
 	});
 
 	test("barrier before any pending → barrier is the head", () => {
@@ -78,23 +121,42 @@ describe("findHead", () => {
 	});
 
 	test("barrier after done/inflight lines", () => {
-		expect(findHead("- [x] done\n- [>] running\n---\n- [ ] after")).toEqual({ kind: "barrier", line: 2 });
+		expect(findHead("- [x] done\n- [>] running\n---\n- [ ] after")).toEqual({
+			kind: "barrier",
+			line: 2,
+		});
 	});
 
 	test("heading (PROSE) is skipped", () => {
-		expect(findHead("# heading\n- [ ] task")).toEqual({ kind: "prompt", line: 1, text: "task" });
+		expect(findHead("# heading\n- [ ] task")).toEqual({
+			kind: "prompt",
+			line: 1,
+			text: "task",
+		});
 	});
 
 	test("blockquote (PROSE) is skipped", () => {
-		expect(findHead("> quote\n- [ ] task")).toEqual({ kind: "prompt", line: 1, text: "task" });
+		expect(findHead("> quote\n- [ ] task")).toEqual({
+			kind: "prompt",
+			line: 1,
+			text: "task",
+		});
 	});
 
 	test("blank lines before the first prompt are skipped", () => {
-		expect(findHead("\n\n- [ ] third")).toEqual({ kind: "prompt", line: 2, text: "third" });
+		expect(findHead("\n\n- [ ] third")).toEqual({
+			kind: "prompt",
+			line: 2,
+			text: "third",
+		});
 	});
 
 	test("empty-text checkbox is skipped", () => {
-		expect(findHead("- [ ] \n- [ ] real")).toEqual({ kind: "prompt", line: 1, text: "real" });
+		expect(findHead("- [ ] \n- [ ] real")).toEqual({
+			kind: "prompt",
+			line: 1,
+			text: "real",
+		});
 	});
 
 	test("empty-text checkbox alone → empty", () => {
@@ -102,11 +164,19 @@ describe("findHead", () => {
 	});
 
 	test("plain text line is treated as a pending prompt", () => {
-		expect(findHead("just plain text")).toEqual({ kind: "prompt", line: 0, text: "just plain text" });
+		expect(findHead("just plain text")).toEqual({
+			kind: "prompt",
+			line: 0,
+			text: "just plain text",
+		});
 	});
 
 	test("bullet without checkbox → pending prompt with marker stripped", () => {
-		expect(findHead("- bare bullet")).toEqual({ kind: "prompt", line: 0, text: "bare bullet" });
+		expect(findHead("- bare bullet")).toEqual({
+			kind: "prompt",
+			line: 0,
+			text: "bare bullet",
+		});
 	});
 
 	test("all done/inflight → empty", () => {
@@ -154,7 +224,11 @@ describe("findHead", () => {
 	});
 
 	test("an orphan indented line (no head above) is skipped", () => {
-		expect(findHead("  orphan\n- [ ] real")).toEqual({ kind: "prompt", line: 1, text: "real" });
+		expect(findHead("  orphan\n- [ ] real")).toEqual({
+			kind: "prompt",
+			line: 1,
+			text: "real",
+		});
 	});
 
 	test("an indented barrier does not get swallowed as continuation", () => {
@@ -184,7 +258,9 @@ describe("markInflight", () => {
 	});
 
 	test("targets the correct line in a multi-line note", () => {
-		expect(markInflight("- [ ] first\n- [ ] second\n- [ ] third", 1)).toBe("- [ ] first\n- [>] second\n- [ ] third");
+		expect(markInflight("- [ ] first\n- [ ] second\n- [ ] third", 1)).toBe(
+			"- [ ] first\n- [>] second\n- [ ] third",
+		);
 	});
 
 	test("out-of-range positive index → note unchanged", () => {
@@ -208,7 +284,9 @@ describe("completeInflight", () => {
 	});
 
 	test("marks multiple in-flight lines as done, leaves other lines untouched", () => {
-		expect(completeInflight("- [x] a\n- [>] b\n- [>] c\n- [ ] d")).toBe("- [x] a\n- [x] b\n- [x] c\n- [ ] d");
+		expect(completeInflight("- [x] a\n- [>] b\n- [>] c\n- [ ] d")).toBe(
+			"- [x] a\n- [x] b\n- [x] c\n- [ ] d",
+		);
 	});
 
 	test("no in-flight lines → returns the same string value", () => {
@@ -217,7 +295,9 @@ describe("completeInflight", () => {
 	});
 
 	test("preserves non-queue lines (barrier, heading) unchanged", () => {
-		expect(completeInflight("---\n- [>] task\n# heading")).toBe("---\n- [x] task\n# heading");
+		expect(completeInflight("---\n- [>] task\n# heading")).toBe(
+			"---\n- [x] task\n# heading",
+		);
 	});
 
 	test("asterisk-prefixed in-flight line is also completed", () => {
@@ -271,7 +351,9 @@ describe("normalizeQueue", () => {
 	});
 
 	test("blank lines between content are preserved", () => {
-		expect(normalizeQueue("plain\n\nbullet")).toBe("- [ ] plain\n\n- [ ] bullet");
+		expect(normalizeQueue("plain\n\nbullet")).toBe(
+			"- [ ] plain\n\n- [ ] bullet",
+		);
 	});
 
 	test("mixed note: heading, checkbox, bullet, plain all handled correctly", () => {
@@ -296,11 +378,15 @@ describe("appendTask", () => {
 	});
 
 	test("note without trailing newline → exactly one newline before new task", () => {
-		expect(appendTask("- [ ] existing", "new task")).toBe("- [ ] existing\n- [ ] new task");
+		expect(appendTask("- [ ] existing", "new task")).toBe(
+			"- [ ] existing\n- [ ] new task",
+		);
 	});
 
 	test("note with trailing newline → new task appended directly after it", () => {
-		expect(appendTask("- [ ] existing\n", "new task")).toBe("- [ ] existing\n- [ ] new task");
+		expect(appendTask("- [ ] existing\n", "new task")).toBe(
+			"- [ ] existing\n- [ ] new task",
+		);
 	});
 
 	test("empty text → note unchanged", () => {
@@ -334,23 +420,36 @@ describe("removeBarrier", () => {
 
 describe("appendQueue", () => {
 	test("renders one prompt as a pending checkbox", () => {
-		expect(appendQueue("", [{ prompt: "do a thing" }])).toBe("- [ ] do a thing");
+		expect(appendQueue("", [{ prompt: "do a thing" }])).toBe(
+			"- [ ] do a thing",
+		);
 	});
 
 	test("renders details as two-space-indented continuation lines", () => {
-		expect(appendQueue("", [{ prompt: "p", details: ["one", "two"] }])).toBe("- [ ] p\n  one\n  two");
+		expect(appendQueue("", [{ prompt: "p", details: ["one", "two"] }])).toBe(
+			"- [ ] p\n  one\n  two",
+		);
 	});
 
 	test("barrierAfter renders a --- barrier line after the step", () => {
-		expect(appendQueue("", [{ prompt: "p", barrierAfter: true }, { prompt: "q" }])).toBe("- [ ] p\n---\n- [ ] q");
+		expect(
+			appendQueue("", [{ prompt: "p", barrierAfter: true }, { prompt: "q" }]),
+		).toBe("- [ ] p\n---\n- [ ] q");
 	});
 
 	test("appends below existing content with exactly one separating newline", () => {
-		expect(appendQueue("- [ ] old\n", [{ prompt: "new" }])).toBe("- [ ] old\n- [ ] new");
+		expect(appendQueue("- [ ] old\n", [{ prompt: "new" }])).toBe(
+			"- [ ] old\n- [ ] new",
+		);
 	});
 
 	test("skips empty-prompt steps and trims prompt and details", () => {
-		expect(appendQueue("", [{ prompt: "  " }, { prompt: "  keep  ", details: ["  d  ", "   "] }])).toBe("- [ ] keep\n  d");
+		expect(
+			appendQueue("", [
+				{ prompt: "  " },
+				{ prompt: "  keep  ", details: ["  d  ", "   "] },
+			]),
+		).toBe("- [ ] keep\n  d");
 	});
 
 	test("no rendered lines → note returned unchanged", () => {

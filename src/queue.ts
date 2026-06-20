@@ -25,7 +25,11 @@ const CONTINUATION = /^\s+\S/;
  * Maps a non-pending checkbox state char to its {@link TaskState}.
  * Absent key (the space char) means pending.
  */
-const STATE_MAP: Record<string, TaskState> = { ">": "inflight", x: "done", X: "done" };
+const STATE_MAP: Record<string, TaskState> = {
+	">": "inflight",
+	x: "done",
+	X: "done",
+};
 
 /** Checkbox-based state of a single queue line. */
 export type TaskState = "pending" | "inflight" | "done";
@@ -100,7 +104,10 @@ function normalizeLine(raw: string): string {
  * Returns `state: null` for non-checkbox lines; `text` strips any leading bullet marker
  * (`- ` / `* `), or is the trimmed line if no marker is present.
  */
-export function parseTaskLine(line: string): { state: TaskState | null; text: string } {
+export function parseTaskLine(line: string): {
+	state: TaskState | null;
+	text: string;
+} {
 	const trimmed = line.trim();
 	const cbMatch = CHECKBOX.exec(trimmed);
 	if (cbMatch !== null) {
@@ -145,7 +152,11 @@ function classifyAt(lines: string[], i: number): QueueHead | null {
 	if (CONTINUATION.test(raw)) return null; // continuation without a head above — skip
 	const text = promptText(trimmed);
 	if (text === null) return null;
-	return { kind: "prompt", line: i, text: [text, ...gatherContinuation(lines, i)].join("\n") };
+	return {
+		kind: "prompt",
+		line: i,
+		text: [text, ...gatherContinuation(lines, i)].join("\n"),
+	};
 }
 
 /** Left-trimmed indented lines immediately after `head`, stopped by a blank/non-indented/barrier line. */

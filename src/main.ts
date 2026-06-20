@@ -32,7 +32,12 @@ import {
 	resolveLocation,
 	sessionsDirFor,
 } from "./paths";
-import { appendQueue, appendTask, normalizeQueue, type QueueStep } from "./queue";
+import {
+	appendQueue,
+	appendTask,
+	normalizeQueue,
+	type QueueStep,
+} from "./queue";
 import { createQueue } from "./queue-controller";
 import {
 	appendHistory,
@@ -86,7 +91,8 @@ function makeNotesEditor(
 	editor.focused = true;
 	editor.onChange = (): void => tui.requestComponentRender(editor);
 	editor.onSubmit = (text: string): void => done({ text, submitted: true });
-	editor.onEscape = (): void => done({ text: editor.getText(), submitted: false });
+	editor.onEscape = (): void =>
+		done({ text: editor.getText(), submitted: false });
 	editor.onCopyPrompt = (): void => copyNoteToClipboard(editor.getText());
 	return editor;
 }
@@ -103,14 +109,19 @@ async function browseNotes(
 	sessionsDir: string,
 	currentNotePath: string | undefined,
 ): Promise<void> {
-	const others = (await listNotes(sessionsDir)).filter((n) => n.path !== currentNotePath && n.preview.length > 0);
+	const others = (await listNotes(sessionsDir)).filter(
+		(n) => n.path !== currentNotePath && n.preview.length > 0,
+	);
 	if (others.length === 0) {
 		ctx.ui.notify("No notes from other sessions yet", "info");
 		return;
 	}
 	const byLabel = new Map<string, NoteSummary>();
 	const options = others.map((n): { label: string; description: string } => {
-		const stamp = new Date(n.mtimeMs).toISOString().slice(0, 16).replace("T", " ");
+		const stamp = new Date(n.mtimeMs)
+			.toISOString()
+			.slice(0, 16)
+			.replace("T", " ");
 		const label = `${stamp}  ${n.preview}`;
 		byLabel.set(label, n);
 		return { label, description: n.sessionId };
@@ -120,13 +131,21 @@ async function browseNotes(
 	if (note === undefined) return;
 	const text = await loadNote(note.path);
 	await ctx.ui.custom<EditorResult>(
-		(tui: TUI, _theme: Theme, _keybindings: KeybindingsManager, done: (r: EditorResult) => void): CustomEditor =>
-			makeNotesEditor(sdk, tui, text, done),
+		(
+			tui: TUI,
+			_theme: Theme,
+			_keybindings: KeybindingsManager,
+			done: (r: EditorResult) => void,
+		): CustomEditor => makeNotesEditor(sdk, tui, text, done),
 	);
 }
 
 /** Run a git command in `cwd`, returning trimmed stdout or null on any failure. */
-async function runGit(pi: ExtensionAPI, cwd: string, args: string[]): Promise<string | null> {
+async function runGit(
+	pi: ExtensionAPI,
+	cwd: string,
+	args: string[],
+): Promise<string | null> {
 	try {
 		const res = await pi.exec("git", args, { cwd });
 		return res.code === 0 ? res.stdout.trim() : null;
@@ -166,9 +185,13 @@ async function applyEditorResult(
 ): Promise<void> {
 	const action = resolveCloseAction(original, result.text, result.submitted);
 	if (action === "discard") return;
-	if (action === "ask" && !(await ctx.ui.confirm("Unsaved notes", "Save your changes?"))) {
+	if (
+		action === "ask" &&
+		!(await ctx.ui.confirm("Unsaved notes", "Save your changes?"))
+	) {
 		// Keep the discarded draft in history so typed work is never truly lost.
-		if (historyPath !== undefined) await appendHistory(historyPath, result.text, new Date(), "discarded");
+		if (historyPath !== undefined)
+			await appendHistory(historyPath, result.text, new Date(), "discarded");
 		ctx.ui.notify("Notes discarded (kept in history)", "info");
 		return;
 	}
@@ -178,7 +201,9 @@ async function applyEditorResult(
 
 /** Load global shortcut overrides (config is not per repo/branch); log any warnings. */
 async function loadShortcuts(pi: ExtensionAPI): Promise<ShortcutConfig> {
-	const { shortcuts, warnings } = parseShortcutConfig(await loadConfigText(configPathFor(homedir())));
+	const { shortcuts, warnings } = parseShortcutConfig(
+		await loadConfigText(configPathFor(homedir())),
+	);
 	for (const w of warnings) pi.logger.warn(`[free-text] ${w}`);
 	return shortcuts;
 }
@@ -210,10 +235,18 @@ function registerNoteAddTool(
 			ctx: ExtensionContext,
 		): Promise<AgentToolResult> {
 			if (deps.notePath() === undefined) {
-				return { content: [{ type: "text", text: "No active note for this session yet." }] };
+				return {
+					content: [
+						{ type: "text", text: "No active note for this session yet." },
+					],
+				};
 			}
 			await deps.persist(ctx, appendTask(deps.content(), params.text));
-			return { content: [{ type: "text", text: `Added to note: ${params.text.trim()}` }] };
+			return {
+				content: [
+					{ type: "text", text: `Added to note: ${params.text.trim()}` },
+				],
+			};
 		},
 	});
 }
@@ -248,9 +281,21 @@ function registerMakeNoteTool(
 			steps: z
 				.array(
 					z.object({
-						prompt: z.string().describe("One prompt to dispatch (becomes a `- [ ]` queue line)."),
-						details: z.array(z.string()).optional().describe("Indented continuation lines sent with the prompt."),
-						barrierAfter: z.boolean().optional().describe("Add a `---` human-in-the-loop barrier after this step."),
+						prompt: z
+							.string()
+							.describe(
+								"One prompt to dispatch (becomes a `- [ ]` queue line).",
+							),
+						details: z
+							.array(z.string())
+							.optional()
+							.describe("Indented continuation lines sent with the prompt."),
+						barrierAfter: z
+							.boolean()
+							.optional()
+							.describe(
+								"Add a `---` human-in-the-loop barrier after this step.",
+							),
 					}),
 				)
 				.describe("Ordered prompts forming the queue."),
@@ -264,11 +309,21 @@ function registerMakeNoteTool(
 			ctx: ExtensionContext,
 		): Promise<AgentToolResult> {
 			if (deps.notePath() === undefined) {
-				return { content: [{ type: "text", text: "No active note for this session yet." }] };
+				return {
+					content: [
+						{ type: "text", text: "No active note for this session yet." },
+					],
+				};
 			}
 			await deps.persist(ctx, appendQueue(deps.content(), params.steps));
-			const count = params.steps.filter((s) => s.prompt.trim().length > 0).length;
-			return { content: [{ type: "text", text: `Wrote ${count} prompt(s) to the note queue.` }] };
+			const count = params.steps.filter(
+				(s) => s.prompt.trim().length > 0,
+			).length;
+			return {
+				content: [
+					{ type: "text", text: `Wrote ${count} prompt(s) to the note queue.` },
+				],
+			};
 		},
 	});
 }
@@ -285,19 +340,25 @@ interface NoteCommandDeps {
 /** Register the `note`, `notes`, and `make-note` slash commands. */
 function registerNoteCommands(pi: ExtensionAPI, deps: NoteCommandDeps): void {
 	pi.registerCommand("note", {
-		description: "Edit free-text notes; `/note <text>` appends a prompt-queue line",
+		description:
+			"Edit free-text notes; `/note <text>` appends a prompt-queue line",
 		handler: (args: string, ctx: ExtensionCommandContext): Promise<void> =>
-			args.trim().length > 0 ? deps.persist(ctx, appendTask(deps.content(), args)) : deps.openEditor(ctx),
+			args.trim().length > 0
+				? deps.persist(ctx, appendTask(deps.content(), args))
+				: deps.openEditor(ctx),
 	});
 	pi.registerCommand("notes", {
 		description: "Browse notes from other sessions in this repo/branch",
 		handler: (_args: string, ctx: ExtensionCommandContext): Promise<void> => {
 			const dir = deps.sessionsDir();
-			return ctx.hasUI && dir !== undefined ? browseNotes(ctx, pi.pi, dir, deps.notePath()) : Promise.resolve();
+			return ctx.hasUI && dir !== undefined
+				? browseNotes(ctx, pi.pi, dir, deps.notePath())
+				: Promise.resolve();
 		},
 	});
 	pi.registerCommand("make-note", {
-		description: "Turn a goal into a prompt-queue plan written to the note (`/make-note <goal>`)",
+		description:
+			"Turn a goal into a prompt-queue plan written to the note (`/make-note <goal>`)",
 		handler: (args: string, _ctx: ExtensionCommandContext): Promise<void> => {
 			const goal = args.trim();
 			if (goal.length > 0) pi.sendUserMessage(makeNotePrompt(goal));
@@ -306,8 +367,12 @@ function registerNoteCommands(pi: ExtensionAPI, deps: NoteCommandDeps): void {
 	});
 }
 
-export default async function freeTextExtension(pi: ExtensionAPI): Promise<void> {
-	let notePath: string | undefined, historyPath: string | undefined, sessionsDir: string | undefined;
+export default async function freeTextExtension(
+	pi: ExtensionAPI,
+): Promise<void> {
+	let notePath: string | undefined;
+	let historyPath: string | undefined;
+	let sessionsDir: string | undefined;
 	let loc: ResolvedLocation | undefined;
 	let saver: DebouncedSaver | undefined;
 	let content = "";
@@ -359,7 +424,8 @@ export default async function freeTextExtension(pi: ExtensionAPI): Promise<void>
 		content = next;
 		saver?.schedule(content);
 		refreshWidget(ctx);
-		if (changed && historyPath !== undefined) await appendHistory(historyPath, content);
+		if (changed && historyPath !== undefined)
+			await appendHistory(historyPath, content);
 	}
 
 	async function openEditor(ctx: ExtensionContext): Promise<void> {
@@ -372,8 +438,12 @@ export default async function freeTextExtension(pi: ExtensionAPI): Promise<void>
 		editorOpen = true;
 		try {
 			const result = await ctx.ui.custom<EditorResult>(
-				(tui: TUI, _theme: Theme, _keybindings: KeybindingsManager, done: (r: EditorResult) => void): CustomEditor =>
-					makeNotesEditor(pi.pi, tui, original, done),
+				(
+					tui: TUI,
+					_theme: Theme,
+					_keybindings: KeybindingsManager,
+					done: (r: EditorResult) => void,
+				): CustomEditor => makeNotesEditor(pi.pi, tui, original, done),
 			);
 			await applyEditorResult(ctx, original, result, persist, historyPath);
 		} finally {
@@ -414,6 +484,14 @@ export default async function freeTextExtension(pi: ExtensionAPI): Promise<void>
 		persist,
 		openEditor,
 	});
-	registerNoteAddTool(pi, { notePath: () => notePath, content: () => content, persist });
-	registerMakeNoteTool(pi, { notePath: () => notePath, content: () => content, persist });
+	registerNoteAddTool(pi, {
+		notePath: () => notePath,
+		content: () => content,
+		persist,
+	});
+	registerMakeNoteTool(pi, {
+		notePath: () => notePath,
+		content: () => content,
+		persist,
+	});
 }
