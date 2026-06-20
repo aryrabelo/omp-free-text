@@ -33,29 +33,37 @@ describe("renderWidgetLines", () => {
 		expect(renderWidgetLines(content, { maxLines: 50 }).length).toBe(10);
 	});
 
-	test("applies the top border, gutter, and per-line styling when a style is given", () => {
+	test("applies the title block, indent, tree hook, and per-line styling when a style is given", () => {
 		const style: WidgetStyle = {
-			topBorder: "T--",
+			title: "T",
+			hook: "└",
+			indent: ">>",
 			hint: (t: string): string => `H<${t}>`,
 			body: (t: string): string => `B<${t}>`,
 			shortcut: (t: string): string => `S<${t}>`,
-			gutter: "|",
 			taskPending: (t: string): string => t,
 			taskInflight: (t: string): string => t,
 			taskDone: (t: string): string => t,
+			strike: (t: string): string => t,
 			continuation: (t: string): string => t,
 		};
-		expect(renderWidgetLines("", { style })).toEqual(["T--", `| H<${EMPTY_HINT}>`, `S<${SHORTCUT_HINT}>`]);
-		expect(renderWidgetLines("one\ntwo", { style })).toEqual(["T--", "| B<one>", "| B<two>", `S<${SHORTCUT_HINT}>`]);
+		expect(renderWidgetLines("", { style })).toEqual(["", "T", `>>H<${EMPTY_HINT}>`, `>>S<${SHORTCUT_HINT}>`]);
+		expect(renderWidgetLines("one\ntwo", { style })).toEqual([
+			"",
+			"T",
+			"B<>>└ one>",
+			"B<>>  two>",
+			`>>S<${SHORTCUT_HINT}>`,
+		]);
 	});
 
-	test("reserves room for the top border within maxLines", () => {
-		const style: WidgetStyle = { ...PLAIN_STYLE, topBorder: "T--" };
+	test("reserves room for the title block within maxLines", () => {
+		const style: WidgetStyle = { ...PLAIN_STYLE, title: "T" };
 		const content = Array.from({ length: 30 }, (_, i) => `line${i + 1}`).join("\n");
 		const lines = renderWidgetLines(content, { style });
 		expect(lines.length).toBe(10);
-		expect(lines[0]).toBe("T--");
-		expect(lines[1]).toBe("line23");
+		expect(lines[0]).toBe("");
+		expect(lines[1]).toBe("T");
 		expect(lines.at(-1)).toBe(SHORTCUT_HINT);
 		expect(lines.at(-2)).toBe("line30");
 	});
@@ -97,6 +105,23 @@ describe("renderWidgetLines", () => {
 			"[done:✓ finished]",
 			SHORTCUT_HINT,
 		]);
+	});
+});
+
+describe("renderWidgetLines — done-block cap (maxDone)", () => {
+	test("shows at most 2 done blocks by default, dropping older ones", () => {
+		const note = "- [x] a\n- [x] b\n- [x] c\n- [ ] d";
+		expect(renderWidgetLines(note, { maxLines: 10 })).toEqual(["✓ b", "✓ c", "☐ d", SHORTCUT_HINT]);
+	});
+
+	test("drops a done block together with its continuation lines", () => {
+		const note = "- [x] a\n  detail a\n- [x] b\n- [x] c";
+		expect(renderWidgetLines(note, { maxLines: 10, maxDone: 2 })).toEqual(["✓ b", "✓ c", SHORTCUT_HINT]);
+	});
+
+	test("keeps all done blocks when under the cap", () => {
+		const note = "- [x] a\n- [x] b";
+		expect(renderWidgetLines(note, { maxLines: 10 })).toEqual(["✓ a", "✓ b", SHORTCUT_HINT]);
 	});
 });
 

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	appendQueue,
 	appendTask,
 	completeInflight,
 	findHead,
@@ -328,5 +329,31 @@ describe("removeBarrier", () => {
 
 	test("negative index → unchanged", () => {
 		expect(removeBarrier("a\nb", -1)).toBe("a\nb");
+	});
+});
+
+describe("appendQueue", () => {
+	test("renders one prompt as a pending checkbox", () => {
+		expect(appendQueue("", [{ prompt: "do a thing" }])).toBe("- [ ] do a thing");
+	});
+
+	test("renders details as two-space-indented continuation lines", () => {
+		expect(appendQueue("", [{ prompt: "p", details: ["one", "two"] }])).toBe("- [ ] p\n  one\n  two");
+	});
+
+	test("barrierAfter renders a --- barrier line after the step", () => {
+		expect(appendQueue("", [{ prompt: "p", barrierAfter: true }, { prompt: "q" }])).toBe("- [ ] p\n---\n- [ ] q");
+	});
+
+	test("appends below existing content with exactly one separating newline", () => {
+		expect(appendQueue("- [ ] old\n", [{ prompt: "new" }])).toBe("- [ ] old\n- [ ] new");
+	});
+
+	test("skips empty-prompt steps and trims prompt and details", () => {
+		expect(appendQueue("", [{ prompt: "  " }, { prompt: "  keep  ", details: ["  d  ", "   "] }])).toBe("- [ ] keep\n  d");
+	});
+
+	test("no rendered lines → note returned unchanged", () => {
+		expect(appendQueue("- [ ] only", [{ prompt: "" }])).toBe("- [ ] only");
 	});
 });

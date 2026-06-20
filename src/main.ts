@@ -32,7 +32,7 @@ import {
 	resolveLocation,
 	sessionsDirFor,
 } from "./paths";
-import { appendTask, normalizeQueue } from "./queue";
+import { appendQueue, appendTask, normalizeQueue, type QueueStep } from "./queue";
 import { createQueue } from "./queue-controller";
 import {
 	appendHistory,
@@ -135,18 +135,19 @@ async function runGit(pi: ExtensionAPI, cwd: string, args: string[]): Promise<st
 	}
 }
 
-/** Build the themed widget styler (border, gutter, body/hint colors). */
+/** Build the themed widget styler mirroring OMP's HUD widgets (bold title, `└` tree hook, 2-space indent). */
 function widgetStyle(theme: Theme): WidgetStyle {
-	const box = theme.boxRound;
 	return {
-		topBorder: theme.fg("borderAccent", box.topLeft + box.horizontal.repeat(2)),
+		title: theme.bold(theme.fg("accent", "Notes")),
+		hook: theme.tree.hook,
+		indent: "  ",
 		hint: (t: string): string => theme.fg("dim", t),
 		body: (t: string): string => theme.fg("text", t),
 		shortcut: (t: string): string => theme.fg("dim", t),
-		gutter: theme.fg("borderAccent", box.vertical),
 		taskPending: (t: string): string => theme.fg("warning", t),
 		taskInflight: (t: string): string => theme.fg("accent", t),
-		taskDone: (t: string): string => theme.fg("dim", theme.strikethrough(t)),
+		taskDone: (t: string): string => theme.fg("dim", t),
+		strike: (t: string): string => theme.strikethrough(t),
 		continuation: (t: string): string => theme.fg("dim", t),
 	};
 }
@@ -213,6 +214,94 @@ function registerNoteAddTool(
 			}
 			await deps.persist(ctx, appendTask(deps.content(), params.text));
 			return { content: [{ type: "text", text: `Added to note: ${params.text.trim()}` }] };
+		},
+	});
+}
+
+/** Meta-prompt asking the agent to decompose a goal into a prompt-queue plan and write it via the make_note tool. */
+function makeNotePrompt(goal: string): string {
+	return (
+		"Decompose this goal into a sequential prompt queue for my free-text note, then call the make_note tool to write it. " +
+		"Each step is ONE prompt I will dispatch in order; put supporting detail in `details` (sent together with the prompt as one message); " +
+		"set `barrierAfter: true` only where you must pause for my review before the queue continues. " +
+		"Keep prompts concrete and self-contained.\n\nGoal: " +
+		goal
+	);
+}
+
+/** Register the `make_note` tool so the agent can write a whole decomposed prompt-queue plan to the note. */
+function registerMakeNoteTool(
+	pi: ExtensionAPI,
+	deps: {
+		notePath: () => string | undefined;
+		content: () => string;
+		persist: (ctx: ExtensionContext, next: string) => Promise<void>;
+	},
+): void {
+	const z = pi.zod;
+	pi.registerTool({
+		name: "make_note",
+		label: "Make note plan",
+		description:
+			"Write a decomposed prompt-queue plan to the current session's free-text note (the prompt queue). Use after the /make-note command or when the user asks to turn a goal into a queue of prompts. Each step is ONE prompt dispatched in order; put supporting detail in `details` (sent with the prompt as one multi-line message); set `barrierAfter: true` only where the human must review before the queue continues (renders a `---` barrier). Prefer concrete, self-contained prompts.",
+		parameters: z.object({
+			steps: z
+				.array(
+					z.object({
+						prompt: z.string().describe("One prompt to dispatch (becomes a `- [ ]` queue line)."),
+						details: z.array(z.string()).optional().describe("Indented continuation lines sent with the prompt."),
+						barrierAfter: z.boolean().optional().describe("Add a `---` human-in-the-loop barrier after this step."),
+					}),
+				)
+				.describe("Ordered prompts forming the queue."),
+		}),
+		approval: "write",
+		async execute(
+			_toolCallId: string,
+			params: { steps: QueueStep[] },
+			_signal: AbortSignal | undefined,
+			_onUpdate: AgentToolUpdateCallback | undefined,
+			ctx: ExtensionContext,
+		): Promise<AgentToolResult> {
+			if (deps.notePath() === undefined) {
+				return { content: [{ type: "text", text: "No active note for this session yet." }] };
+			}
+			await deps.persist(ctx, appendQueue(deps.content(), params.steps));
+			const count = params.steps.filter((s) => s.prompt.trim().length > 0).length;
+			return { content: [{ type: "text", text: `Wrote ${count} prompt(s) to the note queue.` }] };
+		},
+	});
+}
+
+/** Deps the note slash-commands close over (getters keep them live across session switches). */
+interface NoteCommandDeps {
+	content: () => string;
+	notePath: () => string | undefined;
+	sessionsDir: () => string | undefined;
+	persist: (ctx: ExtensionContext, next: string) => Promise<void>;
+	openEditor: (ctx: ExtensionContext) => Promise<void>;
+}
+
+/** Register the `note`, `notes`, and `make-note` slash commands. */
+function registerNoteCommands(pi: ExtensionAPI, deps: NoteCommandDeps): void {
+	pi.registerCommand("note", {
+		description: "Edit free-text notes; `/note <text>` appends a prompt-queue line",
+		handler: (args: string, ctx: ExtensionCommandContext): Promise<void> =>
+			args.trim().length > 0 ? deps.persist(ctx, appendTask(deps.content(), args)) : deps.openEditor(ctx),
+	});
+	pi.registerCommand("notes", {
+		description: "Browse notes from other sessions in this repo/branch",
+		handler: (_args: string, ctx: ExtensionCommandContext): Promise<void> => {
+			const dir = deps.sessionsDir();
+			return ctx.hasUI && dir !== undefined ? browseNotes(ctx, pi.pi, dir, deps.notePath()) : Promise.resolve();
+		},
+	});
+	pi.registerCommand("make-note", {
+		description: "Turn a goal into a prompt-queue plan written to the note (`/make-note <goal>`)",
+		handler: (args: string, _ctx: ExtensionCommandContext): Promise<void> => {
+			const goal = args.trim();
+			if (goal.length > 0) pi.sendUserMessage(makeNotePrompt(goal));
+			return Promise.resolve();
 		},
 	});
 }
@@ -302,9 +391,7 @@ export default async function freeTextExtension(pi: ExtensionAPI): Promise<void>
 		shortcuts,
 	});
 
-	pi.on("session_start", async (_event, ctx) => {
-		await initSession(ctx);
-	});
+	pi.on("session_start", (_event, ctx) => initSession(ctx));
 
 	pi.on("session_switch", async (_event, ctx) => {
 		await saver?.flush();
@@ -320,16 +407,13 @@ export default async function freeTextExtension(pi: ExtensionAPI): Promise<void>
 		handler: (ctx: ExtensionContext): Promise<void> => openEditor(ctx),
 	});
 
-	pi.registerCommand("note", {
-		description: "Edit free-text session notes (~/.omp-free-text/{repo}/{branch}/{session}.md)",
-		handler: (_args: string, ctx: ExtensionCommandContext): Promise<void> => openEditor(ctx),
+	registerNoteCommands(pi, {
+		content: () => content,
+		notePath: () => notePath,
+		sessionsDir: () => sessionsDir,
+		persist,
+		openEditor,
 	});
-
-	pi.registerCommand("notes", {
-		description: "Browse notes from other sessions in this repo/branch",
-		handler: (_args: string, ctx: ExtensionCommandContext): Promise<void> =>
-			ctx.hasUI && sessionsDir !== undefined ? browseNotes(ctx, pi.pi, sessionsDir, notePath) : Promise.resolve(),
-	});
-
 	registerNoteAddTool(pi, { notePath: () => notePath, content: () => content, persist });
+	registerMakeNoteTool(pi, { notePath: () => notePath, content: () => content, persist });
 }

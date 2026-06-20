@@ -224,3 +224,40 @@ export function appendTask(note: string, text: string): string {
 	if (note.length === 0) return newLine;
 	return (note.endsWith("\n") ? note : `${note}\n`) + newLine;
 }
+
+/** One planned step of a generated queue: a prompt, optional indented detail lines, and an optional trailing HITL barrier. */
+export interface QueueStep {
+	/** The prompt text (becomes a `- [ ] <prompt>` line). */
+	prompt: string;
+	/** Continuation lines sent together with the prompt (rendered two-space indented). */
+	details?: string[];
+	/** When true, a `---` human-in-the-loop barrier is rendered after this step. */
+	barrierAfter?: boolean;
+}
+
+/** Render a single step to note lines (prompt, two-space-indented details, optional `---`); empty prompt → no lines. */
+function renderStep(step: QueueStep): string[] {
+	const prompt = step.prompt.trim();
+	if (prompt.length === 0) return [];
+	const lines = [`- [ ] ${prompt}`];
+	for (const detail of step.details ?? []) {
+		const d = detail.trim();
+		if (d.length > 0) lines.push(`  ${d}`);
+	}
+	if (step.barrierAfter) lines.push("---");
+	return lines;
+}
+
+/**
+ * Render structured {@link QueueStep}s and append them at the bottom of the note.
+ * Each step becomes a `- [ ] <prompt>` line, each detail a two-space-indented
+ * continuation, and `barrierAfter` adds a `---` barrier line. Empty-prompt steps
+ * are skipped; the note is returned unchanged when nothing renders. Ensures
+ * exactly one newline separates the new block from existing content.
+ */
+export function appendQueue(note: string, steps: QueueStep[]): string {
+	const block = steps.flatMap(renderStep).join("\n");
+	if (block.length === 0) return note;
+	if (note.length === 0) return block;
+	return (note.endsWith("\n") ? note : `${note}\n`) + block;
+}
