@@ -1,15 +1,40 @@
 # @aryrabelo/omp-free-text
 
+[![CI](https://github.com/aryrabelo/omp-free-text/actions/workflows/ci.yml/badge.svg)](https://github.com/aryrabelo/omp-free-text/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Runtime: Bun](https://img.shields.io/badge/runtime-Bun-000000.svg?logo=bun)](https://bun.sh)
+
 An OMP (Oh My Pi) extension that gives you a free-text session-notes panel below the status line, persisted per repo, branch, and session — and doubles the note as a FIFO prompt queue you can drip-feed to the agent.
+
+If this is useful to you, please ⭐ the repo — it helps others find it.
+
+## Contents
+
+- [What it does](#what-it-does)
+- [Install in another OMP](#install-in-another-omp)
+- [Usage](#usage)
+  - [Browse other sessions](#browse-other-sessions)
+  - [Prompt queue](#prompt-queue)
+  - [Copy the note](#copy-the-note)
+  - [Let the agent add tasks](#let-the-agent-add-tasks)
+  - [Generate a queue from a goal](#generate-a-queue-from-a-goal)
+  - [Configurable shortcuts](#configurable-shortcuts)
+- [Storage](#storage)
+- [Development](#development)
+- [Non-goals / Roadmap](#non-goals--roadmap)
+- [Contributing](#contributing)
+- [Security](#security)
+- [License](#license)
 
 ## What it does
 
 - Shows a notes panel directly below the status line. It is a read-only preview: the note body followed by a dimmed hint that reads `(Ctrl+N · Ctrl+↓ queue · Ctrl+Shift+↓ auto)` by default (a trailing `▶` marks the toggle key while auto-run is on). The hint reflects your configured keys.
-- Lets you edit notes with the `Ctrl+N` keyboard shortcut or the `/note` slash command, which opens a multi-line editor (Enter saves, Shift+Enter newline, Esc closes with a save/discard confirm).
+- Lets you edit notes with the `Ctrl+N` keyboard shortcut or the `/note` slash command, which opens a multi-line editor (Enter saves, Shift+Enter newline, Esc closes with a save/discard confirm). `/note <text>` appends `<text>` straight to the queue without opening the editor.
 - Lets you browse notes from your other sessions with `/notes`.
 - Doubles the note as a prompt queue of markdown checkbox tasks: `Ctrl+↓` dispatches the head task and the panel shows its state as a glyph — `☐` pending, `▸` in-flight, `✓` done — while `Ctrl+Shift+↓` toggles auto-run (default keys — rebindable, see [Configurable shortcuts](#configurable-shortcuts)).
 - Copies the whole note to your system clipboard with `Alt+Shift+C` (OSC 52, works locally and over SSH).
 - Lets the agent add tasks to your note itself via the `note_add` tool — say "coloca na nota ..." and it appends a `- [ ]` line.
+- Turns a goal into a whole prompt queue with `/make-note <goal>` — the agent decomposes it into sequential prompts (with `---` review barriers) and writes them via the `make_note` tool.
 - Saves notes to `~/.omp-free-text/{repo}/{branch}/{session-id}.md`, where `repo` is the git repository directory name, `branch` is the current git branch, and `session-id` is the OMP session id. Outside a git repo it falls back to the current directory name and `no-branch`.
 - Saves notes when you close the editor and flushes them when the session shuts down.
 
@@ -69,6 +94,10 @@ Press `Alt+Shift+C` to copy the whole note buffer to your system clipboard. It u
 
 The agent can append tasks to your note itself through the `note_add` tool: say something like "coloca na nota ..." (or "add to the list", "remember to ...") and it appends a `- [ ]` line to the bottom of the current note. The tool is auto-available in every session once the extension is installed — no separate skill install.
 
+### Generate a queue from a goal
+
+Type `/make-note <goal>` to turn a high-level goal into a ready-to-drain prompt queue in one shot. The agent decomposes the goal into sequential prompts and writes them to the note via the `make_note` tool: one `- [ ]` task per step, indented detail lines sent together with their prompt, and a `---` human-in-the-loop barrier wherever it decides you should review before the queue continues. Then drive it with `Ctrl+↓` / auto-run like any other queue. (`/note <text>` is the manual one-liner version — it appends a single `- [ ]` task without the agent.)
+
 ### Configurable shortcuts
 
 All three shortcuts are read once at startup from a global `~/.omp-free-text/config.json` (not per repo/branch):
@@ -95,6 +124,7 @@ This is a TypeScript/Bun extension. The entry point is `src/main.ts`.
 
 - Run unit tests with `bun test`.
 - Typecheck with `bun run typecheck`.
+- Lint and format with `bun run lint` (check) / `bun run format` (apply). Style is enforced by [Biome](https://biomejs.dev).
 
 ## Non-goals / Roadmap
 

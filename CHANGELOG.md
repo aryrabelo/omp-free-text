@@ -39,3 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 
 - Auto-run drains at most ~8 lines per continuation chain (OMP's `SESSION_STOP_CONTINUATION_CAP`), then pauses. Use `---` barriers to checkpoint longer queues.
+
+[Unreleased]: https://github.com/aryrabelo/omp-free-text/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/aryrabelo/omp-free-text/releases/tag/v0.1.0

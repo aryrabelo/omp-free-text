@@ -27,9 +27,10 @@ machine. The most relevant security surface is:
 - **Local file I/O** — it reads and writes plain Markdown notes under
   `~/.omp-free-text/{repo}/{branch}/`, plus a global `~/.omp-free-text/config.json`.
   It does not read or write outside that directory tree.
-- **The `note_add` LLM tool** — the extension registers a tool the agent can
-  call to append a `- [ ]` task line to the current note. It only mutates the
-  note buffer; it cannot read or write arbitrary paths.
+- **The `note_add` and `make_note` LLM tools** — the extension registers tools
+  the agent can call to append a `- [ ]` task (`note_add`) or write a decomposed
+  prompt-queue plan (`make_note`) to the current note. They only mutate the note
+  buffer; they cannot read or write arbitrary paths.
 - **OSC 52 clipboard escapes** — copying the note writes the buffer to your
   terminal's clipboard via an OSC 52 terminal escape sequence.
 - **The `herdr` notification subprocess** — when running inside Herdr
