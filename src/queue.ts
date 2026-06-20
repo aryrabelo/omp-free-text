@@ -18,6 +18,8 @@ const PROSE = /^(#{1,6}\s|>\s)/;
 const BULLET = /^[-*]\s+(.*)$/;
 /** In-flight checkbox line: g1 = payload text. */
 const INFLIGHT = /^[-*]\s+\[>\]\s*(.*)$/;
+/** A continuation line: leading whitespace then content — belongs to the prompt above it. */
+const CONTINUATION = /^\s+\S/;
 
 /**
  * Maps a non-pending checkbox state char to its {@link TaskState}.
@@ -79,6 +81,7 @@ function extractText(trimmed: string): string {
 function normalizeLine(raw: string): string {
 	const trimmed = raw.trim();
 	if (trimmed.length === 0) return raw;
+	if (CONTINUATION.test(raw) && !BARRIER.test(trimmed)) return raw; // indented continuation — keep verbatim
 	if (BARRIER.test(trimmed)) return raw;
 	if (PROSE.test(trimmed)) return raw;
 	if (CHECKBOX.test(trimmed)) return raw;
@@ -115,23 +118,46 @@ export function parseTaskLine(line: string): { state: TaskState | null; text: st
 
 /**
  * Scan lines top-to-bottom (0-based index) and return the head of the queue.
- * Blank and prose lines are skipped; done/inflight checkboxes are skipped;
- * the first barrier encountered returns `{ kind:'barrier', line }`;
- * the first pending or plain/bullet line with non-empty text returns `{ kind:'prompt', line, text }`.
- * Returns `{ kind:'empty' }` when no actionable line exists.
+ * Blank, prose, and orphan continuation lines are skipped; done/inflight checkboxes
+ * are skipped; the first barrier encountered returns `{ kind:'barrier', line }`.
+ * The first pending or plain/bullet line with non-empty text returns
+ * `{ kind:'prompt', line, text }`, where `text` joins the head with any immediately
+ * following indented continuation lines (left-trimmed, newline-separated) so an
+ * indented block is dispatched as one multi-line prompt. A blank or non-indented
+ * line ends the continuation group. Returns `{ kind:'empty' }` when no actionable line exists.
  */
 export function findHead(note: string): QueueHead {
 	const lines = note.split("\n");
 	for (let i = 0; i < lines.length; i++) {
-		const raw = lines[i];
-		if (raw === undefined) continue;
-		const trimmed = raw.trim();
-		if (trimmed.length === 0) continue;
-		if (BARRIER.test(trimmed)) return { kind: "barrier", line: i };
-		const text = promptText(trimmed);
-		if (text !== null) return { kind: "prompt", line: i, text };
+		const head = classifyAt(lines, i);
+		if (head !== null) return head;
 	}
 	return { kind: "empty" };
+}
+
+/** Classify the line at `i` as a head, or `null` to skip it (blank/prose/continuation/done). */
+function classifyAt(lines: string[], i: number): QueueHead | null {
+	const raw = lines[i];
+	if (raw === undefined) return null;
+	const trimmed = raw.trim();
+	if (trimmed.length === 0) return null;
+	if (BARRIER.test(trimmed)) return { kind: "barrier", line: i };
+	if (CONTINUATION.test(raw)) return null; // continuation without a head above — skip
+	const text = promptText(trimmed);
+	if (text === null) return null;
+	return { kind: "prompt", line: i, text: [text, ...gatherContinuation(lines, i)].join("\n") };
+}
+
+/** Left-trimmed indented lines immediately after `head`, stopped by a blank/non-indented/barrier line. */
+function gatherContinuation(lines: string[], head: number): string[] {
+	const out: string[] = [];
+	for (let j = head + 1; j < lines.length; j++) {
+		const next = lines[j];
+		if (next === undefined || next.trim().length === 0) break;
+		if (BARRIER.test(next.trim()) || !CONTINUATION.test(next)) break;
+		out.push(next.replace(/^\s+/, ""));
+	}
+	return out;
 }
 
 /**

@@ -119,6 +119,50 @@ describe("findHead", () => {
 	test("barrier with trailing whitespace is still a barrier", () => {
 		expect(findHead("---  ")).toEqual({ kind: "barrier", line: 0 });
 	});
+
+	test("indented lines after a prompt are joined as one multi-line prompt", () => {
+		expect(findHead("Esse é o prompt\n  info one\n  info two")).toEqual({
+			kind: "prompt",
+			line: 0,
+			text: "Esse é o prompt\ninfo one\ninfo two",
+		});
+	});
+
+	test("a blank line ends the continuation group", () => {
+		expect(findHead("prompt a\n  detail\n\nprompt b")).toEqual({
+			kind: "prompt",
+			line: 0,
+			text: "prompt a\ndetail",
+		});
+	});
+
+	test("a non-indented line ends the continuation group", () => {
+		expect(findHead("prompt a\n  detail\nprompt b")).toEqual({
+			kind: "prompt",
+			line: 0,
+			text: "prompt a\ndetail",
+		});
+	});
+
+	test("continuation lines are left-trimmed but keep inner content", () => {
+		expect(findHead("- [ ] head\n    deep indent")).toEqual({
+			kind: "prompt",
+			line: 0,
+			text: "head\ndeep indent",
+		});
+	});
+
+	test("an orphan indented line (no head above) is skipped", () => {
+		expect(findHead("  orphan\n- [ ] real")).toEqual({ kind: "prompt", line: 1, text: "real" });
+	});
+
+	test("an indented barrier does not get swallowed as continuation", () => {
+		expect(findHead("prompt\n  detail\n---")).toEqual({
+			kind: "prompt",
+			line: 0,
+			text: "prompt\ndetail",
+		});
+	});
 });
 
 describe("markInflight", () => {
@@ -233,6 +277,15 @@ describe("normalizeQueue", () => {
 		const input = "# heading\n- [ ] task\n- bare bullet\nplain line";
 		const output = "# heading\n- [ ] task\n- [ ] bare bullet\n- [ ] plain line";
 		expect(normalizeQueue(input)).toBe(output);
+	});
+
+	test("indented continuation line is kept verbatim, not turned into a checkbox", () => {
+		expect(normalizeQueue("head\n  detail")).toBe("- [ ] head\n  detail");
+	});
+
+	test("indented line under a checkbox head stays indented prose", () => {
+		const input = "- [ ] head\n  more context\n  even more";
+		expect(normalizeQueue(input)).toBe(input);
 	});
 });
 

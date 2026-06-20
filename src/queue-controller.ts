@@ -13,6 +13,7 @@
 import type { ExtensionAPI, ExtensionContext, SessionStopEvent } from "@oh-my-pi/pi-coding-agent";
 import type { KeyId } from "@oh-my-pi/pi-tui";
 import type { ShortcutConfig } from "./config";
+import { humanizeKey } from "./config";
 import { completeInflight, findHead, markInflight, removeBarrier } from "./queue";
 
 /**
@@ -23,6 +24,16 @@ import { completeInflight, findHead, markInflight, removeBarrier } from "./queue
 function turnFailed(event: SessionStopEvent): boolean {
 	const last = event.last_assistant_message;
 	return !!last && "stopReason" in last && (last.stopReason === "error" || last.stopReason === "aborted");
+}
+
+/** Best-effort herdr HITL ping (no-op outside herdr); a missing/older herdr must never break the session. */
+async function pingHerdr(pi: ExtensionAPI, label: string): Promise<void> {
+	if (process.env.HERDR_ENV !== "1") return;
+	try {
+		await pi.exec("herdr", ["notification", "show", "Queue paused - your turn", "--body", label, "--sound", "request"]);
+	} catch {
+		// Best-effort: a missing/older herdr must never break the session.
+	}
 }
 
 /** Dependencies the queue controller needs from the extension factory. */
@@ -45,6 +56,7 @@ export interface QueueDeps {
 /** Public surface of the queue controller used by the factory. */
 export interface QueueController {
 	isAuto: () => boolean;
+	isBlocked: () => boolean;
 	reset: () => void;
 }
 
@@ -52,29 +64,17 @@ export interface QueueController {
 export function createQueue(deps: QueueDeps): QueueController {
 	const { pi } = deps;
 	let auto = false;
-
-	// Mirror the queue's human-in-the-loop pause into herdr's sidebar: emit the
-	// `herdr:blocked` event the herdr:omp integration hook listens for, so a
-	// paused space shows the blocked glyph. Paired strictly (one true <-> one
-	// false): the hook pins the pane blocked while its internal count stays > 0.
+	// `blocked` drives the widget hint's unlock instruction and, inside herdr, mirrors
+	// into the sidebar via a strictly-paired `herdr:blocked` event (one true <-> one false).
 	let blocked = false;
 	function setBlocked(active: boolean, label?: string): void {
-		if (process.env.HERDR_ENV !== "1" || active === blocked) return;
+		if (active === blocked) return;
 		blocked = active;
+		if (process.env.HERDR_ENV !== "1") return;
 		try {
 			pi.events.emit("herdr:blocked", active ? { active: true, label } : { active: false });
 		} catch {
 			// Best-effort: the herdr integration may be absent or older.
-		}
-	}
-
-	async function pingHerdr(): Promise<void> {
-		if (process.env.HERDR_ENV !== "1") return;
-		try {
-			const args = ["notification", "show", "Queue paused - your turn", "--body", deps.label(), "--sound", "request"];
-			await pi.exec("herdr", args);
-		} catch {
-			// Best-effort: a missing/older herdr must never break the session.
 		}
 	}
 
@@ -98,8 +98,8 @@ export function createQueue(deps: QueueDeps): QueueController {
 		auto = false;
 		setBlocked(true, deps.label());
 		deps.refresh(ctx);
-		ctx.ui.notify("Queue paused at --- (human in the loop)", "info");
-		await pingHerdr();
+		ctx.ui.notify(`Queue paused at --- (human in the loop) — ${humanizeKey(deps.shortcuts.queueStep)} to pass`, "info");
+		await pingHerdr(pi, deps.label());
 	}
 
 	/** Feed the next line while the agent is idle (prompt -> send, barrier -> halt). */
@@ -177,6 +177,7 @@ export function createQueue(deps: QueueDeps): QueueController {
 
 	return {
 		isAuto: (): boolean => auto,
+		isBlocked: (): boolean => blocked,
 		reset: (): void => {
 			auto = false;
 			setBlocked(false);

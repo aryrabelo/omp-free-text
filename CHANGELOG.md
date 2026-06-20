@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Checkbox task queue: note lines carry a markdown checkbox state — `- [ ]` pending, `- [>]` in-flight, `- [x]` done — rendered in the panel as north-style glyphs `☐`/`▸`/`✓`. Plain lines and `-` bullets auto-normalize to `- [ ]` on save, so you never type `[ ]` by hand; `#` headings and `>` quotes stay prose.
 - `Alt+Shift+C` copies the whole note buffer to the system clipboard via an OSC 52 escape (works locally and over SSH).
 - `note_add` LLM tool: the agent can append a `- [ ]` task to the bottom of the current note when you say things like "coloca na nota/lista", "add to the list", or "remember to ...". Auto-available in every session once installed — no separate skill install.
+- Indented continuation lines: lines indented under a prompt are sent together as one multi-line prompt (left-trimmed, newline-joined); a blank, non-indented, or `---` line ends the block. They stay verbatim in the note (never normalized into checkboxes).
 
 ### Changed
 
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Auto-run now feeds each queued line as a real follow-up user message, so dispatched prompts appear in the transcript exactly as if you typed them (previously auto-fed lines were injected as an invisible `session_stop` continuation and only the replies showed). Manual `Ctrl+↓` steps were already visible. This also removes the ~8-line `SESSION_STOP_CONTINUATION_CAP` ceiling: a long queue now drains one visible turn at a time until a `---` barrier or a failed/aborted turn halts it.
+- The human-in-the-loop pause now shows how to resume: the widget hint appends an explicit unlock instruction naming the queue-step key (e.g. `⏸ paused — Ctrl+↓ passes ---`) and the pause notification names it too. The blocked state is tracked everywhere, not only inside Herdr.
 
 ## [0.1.0] - 2026-06-18
 

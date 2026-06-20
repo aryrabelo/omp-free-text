@@ -228,7 +228,7 @@ export default async function freeTextExtension(pi: ExtensionAPI): Promise<void>
 
 	function refreshWidget(ctx: ExtensionContext): void {
 		if (!ctx.hasUI) return;
-		const shortcut = queueHint(shortcuts, queue.isAuto());
+		const shortcut = queueHint(shortcuts, queue.isAuto(), queue.isBlocked());
 		ctx.ui.setWidget(
 			WIDGET_KEY,
 			renderWidgetLines(content, {

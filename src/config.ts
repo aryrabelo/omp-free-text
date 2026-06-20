@@ -130,14 +130,17 @@ export function humanizeKey(key: string): string {
 
 /**
  * Widget shortcut-hint label: humanizes all three configured keys and marks
- * auto-run with a trailing ▶ when active. Every key is shown so the bindings
- * stay discoverable in the terminal panel.
+ * auto-run with a trailing ▶ when active. When `blocked` (paused at a `---`
+ * human-in-the-loop barrier) it appends an explicit unlock instruction naming
+ * the queue-step key. Every key is shown so the bindings stay discoverable.
  *
  * Example (defaults, auto off): "(Ctrl+N · Ctrl+↓ queue · Ctrl+Shift+↓ auto)".
+ * Example (blocked): "(Ctrl+N · Ctrl+↓ queue · Ctrl+Shift+↓ auto) ⏸ paused — Ctrl+↓ passes ---".
  */
-export function queueHint(shortcuts: ShortcutConfig, auto: boolean): string {
+export function queueHint(shortcuts: ShortcutConfig, auto: boolean, blocked = false): string {
 	const edit = humanizeKey(shortcuts.editNotes);
 	const step = humanizeKey(shortcuts.queueStep);
 	const toggle = humanizeKey(shortcuts.queueToggleAuto);
-	return `(${edit} · ${step} queue · ${toggle} auto${auto ? " ▶" : ""})`;
+	const base = `(${edit} · ${step} queue · ${toggle} auto${auto ? " ▶" : ""})`;
+	return blocked ? `${base} ⏸ paused — ${step} passes ---` : base;
 }

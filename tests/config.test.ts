@@ -128,4 +128,10 @@ describe("queueHint", () => {
 			"(Ctrl+E · Alt+↓ queue · Ctrl+G auto)",
 		);
 	});
+
+	test("appends an unlock instruction when blocked at a barrier", () => {
+		expect(queueHint(DEFAULT_SHORTCUTS, false, true)).toBe(
+			"(Ctrl+N · Ctrl+↓ queue · Ctrl+Shift+↓ auto) ⏸ paused — Ctrl+↓ passes ---",
+		);
+	});
 });
