@@ -147,6 +147,7 @@ function widgetStyle(theme: Theme): WidgetStyle {
 		taskPending: (t: string): string => theme.fg("warning", t),
 		taskInflight: (t: string): string => theme.fg("accent", t),
 		taskDone: (t: string): string => theme.fg("dim", theme.strikethrough(t)),
+		continuation: (t: string): string => theme.fg("dim", t),
 	};
 }
 

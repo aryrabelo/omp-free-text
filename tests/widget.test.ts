@@ -43,6 +43,7 @@ describe("renderWidgetLines", () => {
 			taskPending: (t: string): string => t,
 			taskInflight: (t: string): string => t,
 			taskDone: (t: string): string => t,
+			continuation: (t: string): string => t,
 		};
 		expect(renderWidgetLines("", { style })).toEqual(["T--", `| H<${EMPTY_HINT}>`, `S<${SHORTCUT_HINT}>`]);
 		expect(renderWidgetLines("one\ntwo", { style })).toEqual(["T--", "| B<one>", "| B<two>", `S<${SHORTCUT_HINT}>`]);
@@ -80,6 +81,20 @@ describe("renderWidgetLines", () => {
 
 	test("prose line passes through body styler without a glyph (gutter empty in PLAIN_STYLE)", () => {
 		expect(renderWidgetLines("hello")).toEqual(["hello", SHORTCUT_HINT]);
+	});
+
+	test("indented continuation lines render with the ┆ connector, not the gutter", () => {
+		expect(renderWidgetLines("- [ ] head\n  detail one\n  detail two")).toEqual([
+			"☐ head",
+			"┆ detail one",
+			"┆ detail two",
+			SHORTCUT_HINT,
+		]);
+	});
+
+	test("continuation lines route through the continuation styler", () => {
+		const style: WidgetStyle = { ...PLAIN_STYLE, continuation: (t: string): string => `[cont:${t}]` };
+		expect(renderWidgetLines("- [>] head\n  more", { style })).toEqual(["▸ head", "[cont:┆ more]", SHORTCUT_HINT]);
 	});
 
 	test("routes each task state to the correct per-state styler", () => {

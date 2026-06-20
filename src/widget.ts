@@ -20,6 +20,10 @@ const GLYPH_PENDING = "☐";
 const GLYPH_INFLIGHT = "▸";
 /** Glyph for a completed task — U+2713. */
 const GLYPH_DONE = "✓";
+/** Connector glyph prefixed to a multi-line prompt's continuation lines — U+2506. */
+const GLYPH_CONTINUATION = "┆";
+/** A continuation line: leading whitespace then content (mirrors the queue's rule). */
+const CONTINUATION = /^\s+\S/;
 
 /** Styling hooks applied per line. Default is plain (identity) for tests/non-UI. */
 export interface WidgetStyle {
@@ -39,6 +43,8 @@ export interface WidgetStyle {
 	taskInflight: (text: string) => string;
 	/** Style a done task line (receives the full display string, e.g. "✓ buy milk"). */
 	taskDone: (text: string) => string;
+	/** Style a multi-line prompt continuation line (receives the full string, e.g. "┆ detail"). */
+	continuation: (text: string) => string;
 }
 
 /** No-op styling: identical output to a plain string array. */
@@ -51,6 +57,7 @@ export const PLAIN_STYLE: WidgetStyle = {
 	taskPending: (t: string): string => t,
 	taskInflight: (t: string): string => t,
 	taskDone: (t: string): string => t,
+	continuation: (t: string): string => t,
 };
 
 export interface WidgetOptions {
@@ -65,14 +72,16 @@ export interface WidgetOptions {
 /**
  * Render a single body line according to its task state.
  * Task lines (pending/inflight/done) are rendered with a leading glyph and routed
- * through the matching per-state styler; prose/barrier/blank lines fall through to
- * the plain body styler with the gutter prefix.
+ * through the matching per-state styler; indented continuation lines (multi-line
+ * prompt detail) render with a `┆` connector through the continuation styler; other
+ * prose/barrier/blank lines fall through to the plain body styler with the gutter prefix.
  */
 function renderBodyLine(line: string, style: WidgetStyle, gutter: string): string {
 	const { state, text } = parseTaskLine(line);
 	if (state === "pending") return style.taskPending(`${GLYPH_PENDING} ${text}`);
 	if (state === "inflight") return style.taskInflight(`${GLYPH_INFLIGHT} ${text}`);
 	if (state === "done") return style.taskDone(`${GLYPH_DONE} ${text}`);
+	if (CONTINUATION.test(line)) return style.continuation(`${GLYPH_CONTINUATION} ${text}`);
 	return gutter + style.body(line);
 }
 
