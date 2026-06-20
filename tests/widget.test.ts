@@ -83,20 +83,6 @@ describe("renderWidgetLines", () => {
 		expect(renderWidgetLines("hello")).toEqual(["hello", SHORTCUT_HINT]);
 	});
 
-	test("indented continuation lines render with the ┆ connector, not the gutter", () => {
-		expect(renderWidgetLines("- [ ] head\n  detail one\n  detail two")).toEqual([
-			"☐ head",
-			"┆ detail one",
-			"┆ detail two",
-			SHORTCUT_HINT,
-		]);
-	});
-
-	test("continuation lines route through the continuation styler", () => {
-		const style: WidgetStyle = { ...PLAIN_STYLE, continuation: (t: string): string => `[cont:${t}]` };
-		expect(renderWidgetLines("- [>] head\n  more", { style })).toEqual(["▸ head", "[cont:┆ more]", SHORTCUT_HINT]);
-	});
-
 	test("routes each task state to the correct per-state styler", () => {
 		const style: WidgetStyle = {
 			...PLAIN_STYLE,
@@ -109,6 +95,49 @@ describe("renderWidgetLines", () => {
 			"[pending:☐ todo]",
 			"[inflight:▸ wip]",
 			"[done:✓ finished]",
+			SHORTCUT_HINT,
+		]);
+	});
+});
+
+describe("renderWidgetLines — multi-line continuation", () => {
+	test("indented continuation lines render with the ┆ connector, not the gutter", () => {
+		expect(renderWidgetLines("- [ ] head\n  detail one\n  detail two")).toEqual([
+			"☐ head",
+			"┆ detail one",
+			"┆ detail two",
+			SHORTCUT_HINT,
+		]);
+	});
+
+	test("continuation inherits the parent task's state styler (whole block one color)", () => {
+		const style: WidgetStyle = {
+			...PLAIN_STYLE,
+			taskPending: (t: string): string => `[P:${t}]`,
+			taskInflight: (t: string): string => `[I:${t}]`,
+			taskDone: (t: string): string => `[D:${t}]`,
+			continuation: (t: string): string => `[orphan:${t}]`,
+		};
+		expect(renderWidgetLines("- [ ] head\n  more", { style })).toEqual(["[P:☐ head]", "[P:┆ more]", SHORTCUT_HINT]);
+		expect(renderWidgetLines("- [>] head\n  more", { style })).toEqual(["[I:▸ head]", "[I:┆ more]", SHORTCUT_HINT]);
+		expect(renderWidgetLines("- [x] head\n  more", { style })).toEqual(["[D:✓ head]", "[D:┆ more]", SHORTCUT_HINT]);
+	});
+
+	test("orphan continuation (no head in view) falls back to the continuation styler", () => {
+		const style: WidgetStyle = { ...PLAIN_STYLE, continuation: (t: string): string => `[orphan:${t}]` };
+		expect(renderWidgetLines("  stray", { style })).toEqual(["[orphan:┆ stray]", SHORTCUT_HINT]);
+	});
+
+	test("a blank line ends the continuation group (next continuation is orphan)", () => {
+		const style: WidgetStyle = {
+			...PLAIN_STYLE,
+			taskPending: (t: string): string => `[P:${t}]`,
+			continuation: (t: string): string => `[orphan:${t}]`,
+		};
+		expect(renderWidgetLines("- [ ] head\n\n  stray", { style })).toEqual([
+			"[P:☐ head]",
+			"",
+			"[orphan:┆ stray]",
 			SHORTCUT_HINT,
 		]);
 	});

@@ -6,7 +6,7 @@
  * then a dimmed shortcut hint as the final line, without the gutter glyph.
  */
 
-import { parseTaskLine } from "./queue";
+import { parseTaskLine, type TaskState } from "./queue";
 
 /** Trailing shortcut hint shown on the widget's last line. */
 export const SHORTCUT_HINT = "(Ctrl+N)";
@@ -69,20 +69,34 @@ export interface WidgetOptions {
 	style?: WidgetStyle;
 }
 
+/** Style a continuation line by its parent task's state, so the whole multi-line block reads in one color (dim fallback when orphaned). */
+function styleContinuation(parent: TaskState | null, text: string, style: WidgetStyle): string {
+	if (parent === "pending") return style.taskPending(text);
+	if (parent === "inflight") return style.taskInflight(text);
+	if (parent === "done") return style.taskDone(text);
+	return style.continuation(text);
+}
+
 /**
- * Render a single body line according to its task state.
- * Task lines (pending/inflight/done) are rendered with a leading glyph and routed
- * through the matching per-state styler; indented continuation lines (multi-line
- * prompt detail) render with a `┆` connector through the continuation styler; other
- * prose/barrier/blank lines fall through to the plain body styler with the gutter prefix.
+ * Render body lines, tracking each multi-line prompt's head state so its indented
+ * continuation lines inherit the head's styling (pending block reads active, done block dim).
+ * Task lines render with their glyph; continuation lines with the `┆` connector; a
+ * blank/prose/barrier line ends the group; other prose falls to the gutter body styler.
  */
-function renderBodyLine(line: string, style: WidgetStyle, gutter: string): string {
-	const { state, text } = parseTaskLine(line);
-	if (state === "pending") return style.taskPending(`${GLYPH_PENDING} ${text}`);
-	if (state === "inflight") return style.taskInflight(`${GLYPH_INFLIGHT} ${text}`);
-	if (state === "done") return style.taskDone(`${GLYPH_DONE} ${text}`);
-	if (CONTINUATION.test(line)) return style.continuation(`${GLYPH_CONTINUATION} ${text}`);
-	return gutter + style.body(line);
+function renderBody(lines: string[], style: WidgetStyle, gutter: string): string[] {
+	let parent: TaskState | null = null;
+	return lines.map((line): string => {
+		const { state, text } = parseTaskLine(line);
+		if (state !== null) {
+			parent = state;
+			if (state === "pending") return style.taskPending(`${GLYPH_PENDING} ${text}`);
+			if (state === "inflight") return style.taskInflight(`${GLYPH_INFLIGHT} ${text}`);
+			return style.taskDone(`${GLYPH_DONE} ${text}`);
+		}
+		if (CONTINUATION.test(line)) return styleContinuation(parent, `${GLYPH_CONTINUATION} ${text}`, style);
+		parent = null;
+		return gutter + style.body(line);
+	});
 }
 
 /**
@@ -110,5 +124,5 @@ export function renderWidgetLines(content: string, options: WidgetOptions = {}):
 
 	const allLines = trimmed.split("\n");
 	const tail = allLines.slice(Math.max(allLines.length - bodyBudget, 0));
-	return [...head, ...tail.map((l) => renderBodyLine(l, style, gutter)), footer];
+	return [...head, ...renderBody(tail, style, gutter), footer];
 }
