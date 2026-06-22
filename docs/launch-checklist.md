@@ -25,23 +25,13 @@ in-tree doc/asset fixes.
 The live repo is the single biggest gap. Verified via `gh repo view` /
 `gh api` on 2026-06-22:
 
-- [ ] 🔴 🧑 **Flip repo to Public.** Currently `isPrivate=true`. README line 43
-  already claims "The repo is public" and `omp plugin install github:...`
-  returns 404 until this is flipped. Settings → General → Change visibility →
-  Public.
-- [ ] 🔴 🧑 **Set repo description.** Currently empty. Use the package.json
-  description: _"OMP harness extension: a free-text session-notes panel below
-  the status line with a prompt queue and cross-session note browsing, persisted
-  per repo/branch/session."_
-- [ ] 🔴 🧑 **Add topics.** Currently none. Seed from package.json keywords:
-  `oh-my-pi`, `omp`, `coding-agent`, `cli`, `developer-tools`, `tui`, `bun`,
-  `notes`, `free-text`, `scratchpad`. (`github.com/topics/oh-my-pi` is browsed —
-  the `oh-my-pi` topic is the highest-value tag.)
-- [ ] 🔴 🧑 **Cut annotated `v0.1.0` tag + GitHub Release.** Zero tags/releases
-  exist; package.json is already `0.1.0`. The tag enables
-  `omp plugin install github:aryrabelo/omp-free-text#v0.1.0` pinning.
-  `git tag -a v0.1.0 -m "v0.1.0" && git push origin v0.1.0`, then publish a
-  Release from the tag.
+- [x] 🔴 🧑 **Flip repo to Public.** Done 2026-06-22 — `visibility: PUBLIC`.
+- [x] 🔴 🧑 **Set repo description.** Done — set to the package.json description.
+- [x] 🔴 🧑 **Add topics.** Done — 10 topics: `oh-my-pi`, `omp`, `coding-agent`,
+  `cli`, `developer-tools`, `tui`, `bun`, `notes`, `free-text`, `scratchpad`.
+- [x] 🔴 🧑 **Cut annotated `v0.1.0` tag + GitHub Release.** Done — tag pushed and
+  Release published:
+  <https://github.com/aryrabelo/omp-free-text/releases/tag/v0.1.0>.
 - [ ] 🟡 🧑 **Social-preview image.** Still owner-avatar fallback
   (`usesCustomOpenGraphImage=false`). Needed for clean cards on X / dev.to /
   Discord. Settings → Social preview. (Also closes the standard's only in-tree
@@ -51,11 +41,11 @@ The live repo is the single biggest gap. Verified via `gh repo view` /
 
 ## 2. Distribution (🧑 human — needs npm creds)
 
-- [ ] 🔴 🧑 **`npm publish --access public`** at `v0.1.0`. Currently unpublished
-  (`registry.npmjs.org/@aryrabelo/omp-free-text` → 404). Scoped package needs
-  `--access public`. This adds a searchable registry listing **and** a second
-  working install path (`omp plugin install @aryrabelo/omp-free-text` — the npm
-  path loads `omp.extensions`).
+- [x] 🔴 🧑 **`npm publish --access public`** at `v0.1.0`. Done 2026-06-22 —
+  published as `@aryrabelo/omp-free-text@0.1.0`
+  (<https://www.npmjs.com/package/@aryrabelo/omp-free-text>). Second working
+  install path: `omp plugin install @aryrabelo/omp-free-text`. `src/AGENTS.md`
+  excluded from the tarball.
 - [ ] ⚠️ **Do NOT pursue the OMP marketplace.** This plugin delivers behavior via
   `omp.extensions`, which marketplace catalog installs **do not load** (they only
   surface skills/commands/agents/hooks). A marketplace listing would let users
