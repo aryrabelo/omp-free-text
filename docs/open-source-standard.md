@@ -10,10 +10,13 @@ Checked boxes are what the project already meets today; unchecked boxes are the
 gap to close before launch.
 
 > Notes on scope: a few items Tapa itself does **not** ship as separate files
-> (standalone Code of Conduct, `FUNDING.yml`, `dependabot.yml`, weekly build).
-> Tapa folds conduct into CONTRIBUTING and handles dependency hygiene with a CI
-> audit job. Those are marked **(optional — beyond the Tapa baseline)** so the
-> baseline stays honest.
+> (standalone Code of Conduct, `FUNDING.yml`, `dependabot.yml`). Tapa folds
+> conduct into CONTRIBUTING and handles dependency hygiene with a CI audit job.
+> Those are marked **(optional — beyond the Tapa baseline)**. Other items Tapa
+> **does** ship as baseline (weekly build, release workflow, size-budget gate,
+> THIRD-PARTY-LICENSES) but that are **N/A here** because this is a
+> source-installed extension with no compiled artifact, are marked **(N/A —
+> Tapa-baseline, artifact-only)** so the baseline stays honest.
 
 ---
 
@@ -28,11 +31,12 @@ gap to close before launch.
   package.json, README. _omp-free-text: have ✓ — "MIT, Ary Rabelo" everywhere._
 - [ ] **THIRD-PARTY-LICENSES.md** — aggregated SPDX licenses of every dependency
   redistributed in the shipped artifact, generated from the lockfile (not
-  hand-curated). _omp-free-text: missing ✗ — arguably **N/A**: the extension
-  ships only `src/` (see package.json `files`) and bundles no third-party code
-  (`@oh-my-pi/pi-coding-agent` is a peer/dev dependency, not redistributed).
-  Add only if a build step ever bundles runtime deps. <<EXPANDIR: confirm no
-  bundling step is added before launch.>>_
+  hand-curated). _Tapa ships this as a script-generated baseline file
+  (`scripts/gen-third-party-licenses.sh` from `Cargo.lock` + bundled JS).
+  omp-free-text: **N/A** — the extension ships only `src/` (see package.json
+  `files`) and bundles no third-party code (`@oh-my-pi/pi-coding-agent` is a
+  peer/dev dependency, not redistributed); confirmed no bundling step exists.
+  Add only if a build step ever bundles runtime deps._
 
 ## Documentation
 
@@ -80,7 +84,10 @@ gap to close before launch.
 - [x] **CI workflow on push + PR** — runs the full verification gate
   (lint/typecheck, test, build) on every push and pull request.
   _omp-free-text: have ✓ — `.github/workflows/ci.yml` runs `bun run lint` +
-  `bun run typecheck` + `bun test`. Enhance: add `build` if/when one exists._
+  `bun run typecheck` + `bun test`. (Tapa's reference gate is 4 jobs — frontend
+  lint/test/build, a Rust job `cargo fmt`/`clippy`/`test`, the audit job, and a
+  macOS artifact-size job; the Rust/size/build jobs are N/A for a TS-only,
+  artifact-free extension.)_
 - [x] **Least-privilege + concurrency on CI** — `permissions: contents: read`
   and a `concurrency` group that cancels superseded runs; scope triggers to
   `branches: [main]`. _omp-free-text: have ✓ — `permissions: contents: read`,
@@ -92,15 +99,23 @@ gap to close before launch.
   `.githooks/`) that runs the same gate locally so regressions are caught before
   the runner. _omp-free-text: missing ✗._
 - [ ] **Release workflow** — tag-triggered (`v*`), builds artifacts, opens a
-  **draft** release for a human to publish. _omp-free-text: missing ✗ —
-  partly N/A (the plugin installs from GitHub source via `omp plugin install`,
-  no compiled artifact), but a tag-on-version flow still enables `#ref` pinning._
+  **draft** release for a human to publish. _Tapa ships `release.yml` (signed,
+  cross-platform binaries) as baseline. omp-free-text: **N/A — Tapa-baseline,
+  artifact-only** (the plugin installs from GitHub source, no compiled artifact);
+  a plain annotated tag (see Release & Versioning) already enables `#ref`
+  pinning without a workflow._
+- [ ] **Artifact size-budget gate** — a committed size budget
+  (`size-budget.json` + a checker) failing CI when the shipped artifact grows
+  past budget, with a human block-and-ask on growth. _Tapa ships this as
+  baseline (`scripts/check-size.mjs`, a CI `size` job). omp-free-text: **N/A —
+  Tapa-baseline, artifact-only** (no compiled artifact to size)._
 - [ ] **`dependabot.yml`** — automated dependency-update PRs.
   _(optional — beyond the Tapa baseline; Tapa relies on the CI audit job
   instead.)_ _omp-free-text: missing ✗._
 - [ ] **Scheduled / weekly build** — periodic artifacts-only build for
-  inspection. _(optional — beyond the Tapa baseline applicability; N/A without a
-  compiled artifact.)_ _omp-free-text: missing ✗ (N/A)._
+  inspection. _Tapa ships `weekly.yml` (cron Mon 06:00 UTC, all-platform
+  artifacts-only build + size gate) as baseline. omp-free-text: **N/A —
+  Tapa-baseline, artifact-only** (no compiled artifact to build periodically)._
 
 ## Code Quality & Conventions
 
@@ -130,8 +145,9 @@ gap to close before launch.
 - [x] **package.json version synced** — `version` matches the latest released
   tag. _omp-free-text: have ✓ — `0.1.0`._
 - [ ] **Git tag per release** — annotated `vX.Y.Z` tag for each published
-  version, enabling `#ref` install pinning. _omp-free-text: missing ✗
-  <<EXPANDIR: confirm release tags on GitHub; not verifiable from working tree.>>_
+  version, enabling `#ref` install pinning. _omp-free-text: missing ✗ —
+  confirmed zero tags/releases on the live repo (2026-06-22); cut an annotated
+  `v0.1.0`._
 
 ## Discoverability / Metadata
 
@@ -147,20 +163,28 @@ gap to close before launch.
 - [x] **Star call-to-action** — a short "⭐ star this" line in the README intro.
   _omp-free-text: have ✓ — "please ⭐ the repo" line in the intro._
 - [ ] **GitHub repo description + topics** — one-line description and topic tags
-  set on the repository itself. _omp-free-text: <<EXPANDIR: set/verify on the
-  GitHub repo settings; not in the working tree.>>_
+  set on the repository itself. _omp-free-text: missing ✗ — confirmed empty
+  description and zero topics on the live repo (2026-06-22). Set both at launch._
 
 ---
 
 ## Scorecard
 
-- **Met today:** 29 of 36 items.
-- **To close:** 7 items — most N/A, optional, or GitHub-settings-only.
+- **Launch precondition (not a scored item):** the repo must be **Public** —
+  it is currently **Private**, so `omp plugin install github:...` 404s until
+  flipped. This is the overriding blocker.
+- **Met today:** 29 of 37 items.
+- **To close:** 8 items — most N/A, optional, or GitHub-settings-only.
 - **Remaining in-tree gaps:** local pre-push hooks (`lefthook.yml`) and a
   README banner/logo image. Both are nice-to-haves, not launch blockers.
-- **GitHub-settings-only** (cannot be set from the working tree, do at launch):
-  annotated `vX.Y.Z` release tag (enables `#ref` pinning), and the repo
-  description + topics in GitHub settings.
-- **Items that are N/A or optional for this project type** (a source-installed
-  Bun extension, no compiled artifact): THIRD-PARTY-LICENSES, release/weekly
-  build workflows, `dependabot.yml`, `FUNDING.yml`. Tracked, not blockers.
+- **GitHub-settings-only** (cannot be set from the working tree, do at launch,
+  all confirmed OPEN on 2026-06-22): annotated `vX.Y.Z` release tag (enables
+  `#ref` pinning), repo description, and repo topics.
+- **Items that are N/A for this project type** (a source-installed Bun
+  extension, no compiled artifact): THIRD-PARTY-LICENSES, release workflow,
+  weekly build, and the artifact size-budget gate — all Tapa-baseline but
+  artifact-only. Optional/beyond-baseline: `dependabot.yml`, `FUNDING.yml`.
+  Tracked, not blockers.
+
+See [`launch-checklist.md`](./launch-checklist.md) for the actionable,
+prioritized go-live list and the publicity plan.
