@@ -35,7 +35,7 @@ If this is useful to you, please ⭐ the repo — it helps others find it.
 - Copies the whole note to your system clipboard with `Alt+Shift+C` (OSC 52, works locally and over SSH).
 - Lets the agent add tasks to your note itself via the `note_add` tool — say "coloca na nota ..." and it appends a `- [ ]` line.
 - Turns a goal into a whole prompt queue with `/make-note <goal>` — the agent decomposes it into sequential prompts (with `---` review barriers) and writes them via the `make_note` tool.
-- Saves notes to `~/.omp-free-text/{repo}/{branch}/{session-id}.md`, where `repo` is the git repository directory name, `branch` is the current git branch, and `session-id` is the OMP session id. Outside a git repo it falls back to the current directory name and `no-branch`.
+- Saves notes to `~/.free-text/{repo}/{branch}/{session-id}.md`, where `repo` is the git repository directory name, `branch` is the current git branch, and `session-id` is the OMP session id. Outside a git repo it falls back to the current directory name and `no-branch`. Notes written before the root migration (under the legacy `~/.omp-free-text/...` root) are still read back automatically.
 - Saves notes when you close the editor and flushes them when the session shuts down.
 
 ## Install in another OMP
@@ -100,7 +100,7 @@ Type `/make-note <goal>` to turn a high-level goal into a ready-to-drain prompt 
 
 ### Configurable shortcuts
 
-All three shortcuts are read once at startup from a global `~/.omp-free-text/config.json` (not per repo/branch):
+All three shortcuts are read once at startup from a global `~/.free-text/config.json` (not per repo/branch):
 
 ```json
 {
@@ -116,7 +116,7 @@ Omit the file (or any key) to keep the defaults shown above. A missing or malfor
 
 ## Storage
 
-Each session gets its own markdown file under `~/.omp-free-text/`, organized by repo and branch. The files are plain markdown, so you can read or edit them directly. Every changed save (including discarded drafts) is also appended to a sibling `{session-id}.history.md` file, giving you an append-only history of the note.
+Each session gets its own markdown file under `~/.free-text/`, organized by repo and branch. The files are plain markdown, so you can read or edit them directly. Every changed save (including discarded drafts) is also appended to a sibling `{session-id}.history.md` file, giving you an append-only history of the note. Notes saved before the root migration live under the legacy `~/.omp-free-text/` root; they are still read back (active session and the `/notes` browser) but new writes always go to `~/.free-text/`.
 
 ## Development
 

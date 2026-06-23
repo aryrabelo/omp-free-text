@@ -7,7 +7,9 @@
  * - Opens a multi-line editor on `Ctrl+N` or `/note`.
  * - Runs the note as a prompt queue: `Ctrl+down` sends the next line, a `---`
  *   line is a human-in-the-loop barrier, and `Ctrl+shift+down` toggles auto-run.
- * - Persists to `~/.omp-free-text/{repo}/{branch}/{session-id}.md`.
+ * - Persists to `~/.free-text/{repo}/{branch}/{session-id}.md` (with a
+ *   read-only fallback to the legacy `~/.omp-free-text/...` root for notes
+ *   created before the root migration).
  */
 
 import { homedir } from "node:os";
@@ -19,9 +21,12 @@ import {
 	createDebouncedSaver,
 	type DebouncedSaver,
 	historyPathFor,
+	legacyNotePathFor,
+	legacySessionsDirFor,
 	listNotes,
 	loadConfigText,
 	loadNote,
+	loadNoteWithFallback,
 	type NoteSummary,
 	normalizeQueue,
 	notePathFor,
@@ -101,14 +106,27 @@ function makeNotesEditor(
  * (newest first) opens the picked note in a read-only viewer. The viewer reuses
  * the notes editor, but its result is ignored, so browsing never changes the
  * current session's note.
+ *
+ * Notes from the legacy root (`~/.omp-free-text`) are merged in read-only for
+ * back-compat, so sessions created before the root migration stay visible. A
+ * session present at both roots keeps its new-root entry.
  */
 async function browseNotes(
 	ctx: ExtensionContext,
 	sdk: ExtensionAPI["pi"],
 	sessionsDir: string,
 	currentNotePath: string | undefined,
+	legacySessionsDir?: string,
 ): Promise<void> {
-	const others = (await listNotes(sessionsDir)).filter(
+	const fresh = await listNotes(sessionsDir);
+	const legacy =
+		legacySessionsDir !== undefined ? await listNotes(legacySessionsDir) : [];
+	const seen = new Set(fresh.map((n) => n.sessionId));
+	const merged = [
+		...fresh,
+		...legacy.filter((n) => !seen.has(n.sessionId)),
+	].sort((a, b) => b.mtimeMs - a.mtimeMs);
+	const others = merged.filter(
 		(n) => n.path !== currentNotePath && n.preview.length > 0,
 	);
 	if (others.length === 0) {
@@ -332,6 +350,7 @@ interface NoteCommandDeps {
 	content: () => string;
 	notePath: () => string | undefined;
 	sessionsDir: () => string | undefined;
+	legacySessionsDir: () => string | undefined;
 	persist: (ctx: ExtensionContext, next: string) => Promise<void>;
 	openEditor: (ctx: ExtensionContext) => Promise<void>;
 }
@@ -351,7 +370,13 @@ function registerNoteCommands(pi: ExtensionAPI, deps: NoteCommandDeps): void {
 		handler: (_args: string, ctx: ExtensionCommandContext): Promise<void> => {
 			const dir = deps.sessionsDir();
 			return ctx.hasUI && dir !== undefined
-				? browseNotes(ctx, pi.pi, dir, deps.notePath())
+				? browseNotes(
+						ctx,
+						pi.pi,
+						dir,
+						deps.notePath(),
+						deps.legacySessionsDir(),
+					)
 				: Promise.resolve();
 		},
 	});
@@ -372,6 +397,7 @@ export default async function freeTextExtension(
 	let notePath: string | undefined;
 	let historyPath: string | undefined;
 	let sessionsDir: string | undefined;
+	let legacySessionsDir: string | undefined;
 	let loc: ResolvedLocation | undefined;
 	let saver: DebouncedSaver | undefined;
 	let content = "";
@@ -411,7 +437,11 @@ export default async function freeTextExtension(
 		notePath = notePathFor(loc, homedir());
 		historyPath = historyPathFor(loc, homedir());
 		sessionsDir = sessionsDirFor(loc, homedir());
-		content = await loadNote(notePath);
+		legacySessionsDir = legacySessionsDirFor(loc, homedir());
+		content = await loadNoteWithFallback(
+			notePath,
+			legacyNotePathFor(loc, homedir()),
+		);
 		const path = notePath;
 		saver = createDebouncedSaver((c) => saveNote(path, c));
 		refreshWidget(ctx);
@@ -480,6 +510,7 @@ export default async function freeTextExtension(
 		content: () => content,
 		notePath: () => notePath,
 		sessionsDir: () => sessionsDir,
+		legacySessionsDir: () => legacySessionsDir,
 		persist,
 		openEditor,
 	});
