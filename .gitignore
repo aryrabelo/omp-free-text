@@ -10,3 +10,7 @@ dist/
 
 # Internal DOX contracts — kept local, not published
 AGENTS.md
+
+# Local agent/harness session state — never part of the package
+.claude/
+.harness-mem/
