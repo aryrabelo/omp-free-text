@@ -10,20 +10,21 @@
  *
  * Pure queue parsing lives in `./queue`; this module owns the OMP wiring.
  */
+
+import {
+	completeInflight,
+	findHead,
+	humanizeKey,
+	markInflight,
+	removeBarrier,
+	type ShortcutConfig,
+} from "@aryrabelo/free-text-core";
 import type {
 	ExtensionAPI,
 	ExtensionContext,
 	SessionStopEvent,
 } from "@oh-my-pi/pi-coding-agent";
 import type { KeyId } from "@oh-my-pi/pi-tui";
-import type { ShortcutConfig } from "./config";
-import { humanizeKey } from "./config";
-import {
-	completeInflight,
-	findHead,
-	markInflight,
-	removeBarrier,
-} from "./queue";
 
 /**
  * Whether a settling turn ended badly, so auto-run must halt instead of feeding

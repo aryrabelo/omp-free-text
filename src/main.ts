@@ -11,6 +11,32 @@
  */
 
 import { homedir } from "node:os";
+import {
+	appendHistory,
+	appendQueue,
+	appendTask,
+	configPathFor,
+	createDebouncedSaver,
+	type DebouncedSaver,
+	historyPathFor,
+	listNotes,
+	loadConfigText,
+	loadNote,
+	type NoteSummary,
+	normalizeQueue,
+	notePathFor,
+	parseShortcutConfig,
+	type QueueStep,
+	queueHint,
+	type ResolvedLocation,
+	renderWidgetLines,
+	resolveCloseAction,
+	resolveLocation,
+	type ShortcutConfig,
+	saveNote,
+	sessionsDirFor,
+	type WidgetStyle,
+} from "@aryrabelo/free-text-core";
 import type {
 	AgentToolResult,
 	AgentToolUpdateCallback,
@@ -22,34 +48,7 @@ import type {
 	Theme,
 } from "@oh-my-pi/pi-coding-agent";
 import type { KeyId, TUI } from "@oh-my-pi/pi-tui";
-import { parseShortcutConfig, queueHint, type ShortcutConfig } from "./config";
-import { resolveCloseAction } from "./editor";
-import {
-	configPathFor,
-	historyPathFor,
-	notePathFor,
-	type ResolvedLocation,
-	resolveLocation,
-	sessionsDirFor,
-} from "./paths";
-import {
-	appendQueue,
-	appendTask,
-	normalizeQueue,
-	type QueueStep,
-} from "./queue";
 import { createQueue } from "./queue-controller";
-import {
-	appendHistory,
-	createDebouncedSaver,
-	type DebouncedSaver,
-	listNotes,
-	loadConfigText,
-	loadNote,
-	type NoteSummary,
-	saveNote,
-} from "./store";
-import { renderWidgetLines, type WidgetStyle } from "./widget";
 
 const WIDGET_KEY = "free-text";
 
