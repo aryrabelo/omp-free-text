@@ -120,7 +120,7 @@ Each session gets its own markdown file under `~/.free-text/`, organized by repo
 
 ## Development
 
-This is a TypeScript/Bun extension. The entry point is `src/main.ts`.
+This is a TypeScript/Bun extension. The entry point is `src/main.ts`. Its pure logic (paths, queue, store, widget, editor, config) comes from the shared [`@aryrabelo/free-text-core`](https://github.com/aryrabelo/free-text-core) package, and the extension reads legacy `~/.omp-free-text/` notes for back-compat after the root migration to `~/.free-text/`.
 
 - Run unit tests with `bun test`.
 - Typecheck with `bun run typecheck`.

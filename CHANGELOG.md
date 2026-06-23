@@ -26,6 +26,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto-run now feeds each queued line as a real follow-up user message, so dispatched prompts appear in the transcript exactly as if you typed them (previously auto-fed lines were injected as an invisible `session_stop` continuation and only the replies showed). Manual `Ctrl+↓` steps were already visible. This also removes the ~8-line `SESSION_STOP_CONTINUATION_CAP` ceiling: a long queue now drains one visible turn at a time until a `---` barrier or a failed/aborted turn halts it.
 - The human-in-the-loop pause now shows how to resume: the widget hint appends an explicit unlock instruction naming the queue-step key (e.g. `⏸ paused — Ctrl+↓ passes ---`) and the pause notification names it too. The blocked state is tracked everywhere, not only inside Herdr.
 
+## [0.2.0] - 2026-06-23
+
+### Changed
+
+- The plugin's pure logic (config, editor, paths, queue, store, widget) is now sourced from the shared [`@aryrabelo/free-text-core`](https://github.com/aryrabelo/free-text-core) package instead of local copies. No user-facing behavior changes — it is an internal architecture refactor so the same core powers every front-end.
+- The notes root moved from `~/.omp-free-text/` to `~/.free-text/`. New notes (and their `.history.md` siblings and `config.json`) now live under `~/.free-text/{repo}/{branch}/{session-id}.md`.
+
+### Migration
+
+- Non-destructive read-fallback to the legacy `~/.omp-free-text/` root: notes written before this release still load in the active session and still appear in the `/notes` cross-session browser. Nothing under `~/.omp-free-text/` is moved or deleted; only new writes go to `~/.free-text/`.
+
+> **Release task:** before publishing, change the `@aryrabelo/free-text-core` dependency in `package.json` from `file:../free-text-core` to the published `^0.1.0`.
+
 ## [0.1.0] - 2026-06-18
 
 ### Added
@@ -40,5 +53,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Auto-run drains at most ~8 lines per continuation chain (OMP's `SESSION_STOP_CONTINUATION_CAP`), then pauses. Use `---` barriers to checkpoint longer queues.
 
-[Unreleased]: https://github.com/aryrabelo/omp-free-text/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/aryrabelo/omp-free-text/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/aryrabelo/omp-free-text/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/aryrabelo/omp-free-text/releases/tag/v0.1.0

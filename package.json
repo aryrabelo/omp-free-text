@@ -1,6 +1,6 @@
 {
 	"name": "@aryrabelo/omp-free-text",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "OMP harness extension: a free-text session-notes panel below the status line with a prompt queue and cross-session note browsing, persisted per repo/branch/session.",
 	"type": "module",
 	"license": "MIT",
