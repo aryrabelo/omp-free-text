@@ -1,0 +1,20 @@
+docs/launch-checklist.md
+  s_eda03ff1d30ace::t_9c8980b7ed6bf0 84
+  s_eda03ff1d30ace::t_25d1aacee37ce8 6-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "c99bf58014a7caa919f1cf15f1d1312f7f746210",
+  "prompts": {},
+  "sessions": {
+    "s_eda03ff1d30ace": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2ea66dc4-8da3-410c-b17e-d0bf95110e02",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Ary Rabelo <aryrabelo@gmail.com>"
+    }
+  }
+}
