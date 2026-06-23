@@ -3,8 +3,8 @@
 Everything left before `@aryrabelo/omp-free-text` is public at
 [Tapa-standard](./open-source-standard.md) parity, plus how to publicize it.
 
-Source: MegaBrain audit (2026-06-22) — 5 agents cross-checked the working tree,
-the live GitHub repo, the `tapa-rs` reference, and the OMP ecosystem.
+Source: a pre-launch review of the working tree, the live GitHub repo, and the
+OMP ecosystem.
 
 **Bottom line:** zero code work blocks launch. The standard scorecard is 29/36
 (verified) and the gate is green (`bun run lint && bun run typecheck && bun test`
@@ -81,9 +81,7 @@ A source-installed extension with no compiled artifact. Confirmed by audit:
 
 ## 5. Publicity plan
 
-No prior plan existed. Channels ranked by audience fit; the actionable launch
-sequence lives in the aryrabelo-com board (`docs/PLAN.md`, "Lançamento do
-omp-free-text" workstream).
+Channels ranked by audience fit.
 
 | # | Channel | Why | How |
 |---|---------|-----|-----|
