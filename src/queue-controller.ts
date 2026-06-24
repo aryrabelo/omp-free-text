@@ -157,7 +157,14 @@ export function createQueue(deps: QueueDeps): QueueController {
 			ctx.ui.notify("Passed --- barrier", "info");
 			return;
 		}
-		await sendPrompt(ctx, head.line, head.text);
+		// Plain send from idle starts the turn; mid-turn (thinking) a plain send throws
+		// AgentBusyError, so deliver as a follow-up that drains after the current turn settles.
+		await sendPrompt(
+			ctx,
+			head.line,
+			head.text,
+			ctx.isIdle() ? undefined : "followUp",
+		);
 	}
 
 	async function toggle(ctx: ExtensionContext): Promise<void> {
