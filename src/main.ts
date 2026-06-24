@@ -295,6 +295,12 @@ function registerMakeNoteTool(
 		description:
 			"Write a decomposed prompt-queue plan to the current session's free-text note (the prompt queue). Use after the /make-note command or when the user asks to turn a goal into a queue of prompts. Each step is ONE prompt dispatched in order; put supporting detail in `details` (sent with the prompt as one multi-line message); set `barrierAfter: true` only where the human must review before the queue continues (renders a `---` barrier). Prefer concrete, self-contained prompts.",
 		parameters: z.object({
+			heading: z
+				.string()
+				.optional()
+				.describe(
+					"Optional heading for the note (rendered as `# heading` at the top). Use when bootstrapping an empty note to name the session's topic.",
+				),
 			steps: z
 				.array(
 					z.object({
@@ -320,7 +326,7 @@ function registerMakeNoteTool(
 		approval: "write",
 		async execute(
 			_toolCallId: string,
-			params: { steps: QueueStep[] },
+			params: { heading?: string; steps: QueueStep[] },
 			_signal: AbortSignal | undefined,
 			_onUpdate: AgentToolUpdateCallback | undefined,
 			ctx: ExtensionContext,
@@ -332,7 +338,12 @@ function registerMakeNoteTool(
 					],
 				};
 			}
-			await deps.persist(ctx, appendQueue(deps.content(), params.steps));
+			let base = deps.content();
+			if (params.heading) {
+				const h = `# ${params.heading}`;
+				base = base.trim() === "" ? h : `${h}\n\n${base}`;
+			}
+			await deps.persist(ctx, appendQueue(base, params.steps));
 			const count = params.steps.filter(
 				(s) => s.prompt.trim().length > 0,
 			).length;
@@ -402,6 +413,8 @@ export default async function freeTextExtension(
 	let saver: DebouncedSaver | undefined;
 	let content = "";
 	let editorOpen = false;
+	/** Guards the empty-note bootstrap so it fires at most once per session. */
+	let bootstrapped = false;
 	const shortcuts = await loadShortcuts(pi);
 
 	pi.setLabel("Free Text Notes");
@@ -424,6 +437,7 @@ export default async function freeTextExtension(
 	async function initSession(ctx: ExtensionContext): Promise<void> {
 		saver?.dispose();
 		queue.reset();
+		bootstrapped = false;
 		const [repoToplevel, branch] = await Promise.all([
 			runGit(pi, ctx.cwd, ["rev-parse", "--show-toplevel"]),
 			runGit(pi, ctx.cwd, ["rev-parse", "--abbrev-ref", "HEAD"]),
@@ -499,6 +513,20 @@ export default async function freeTextExtension(
 
 	pi.on("session_shutdown", async () => {
 		await saver?.flush();
+	});
+
+	// Bootstrap: when the first turn settles and the note is still empty, ask the
+	// agent to populate it with a heading and suggested follow-up tasks.
+	pi.on("session_stop", (_event, ctx) => {
+		if (bootstrapped || content.trim() !== "") return;
+		bootstrapped = true;
+		pi.sendUserMessage(
+			"The session note is empty. Based on the conversation so far, please call the make_note tool to create a note with:\n" +
+				"1. A short `heading` summarizing what we are working on (becomes `# Heading` at the top of the note).\n" +
+				"2. Two or more follow-up sub-tasks as `steps` that I can track and dispatch from the queue.\n" +
+				"Keep the heading concise and the tasks actionable.",
+			{ deliverAs: "followUp" },
+		);
 	});
 
 	pi.registerShortcut(shortcuts.editNotes as KeyId, {
